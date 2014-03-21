@@ -1,5 +1,5 @@
-mu = 0.05;
-dat = LMS_MIMO_antonio(mu);
+mu = 0.002;
+dat = LMS_MIMO(mu);
 
 global H;
 cond(H)
