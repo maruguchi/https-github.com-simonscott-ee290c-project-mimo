@@ -1,4 +1,4 @@
-function decodedData = MIMO_sim(mu)
+function decodedData = MIMO_sim(mu, decoder_type)
 
 % Transmit parameters
 Ntx = 4;
@@ -33,7 +33,13 @@ end
 rx = H*transmitted + noise;
 
 % Decode the received signal
-[decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu);
+if(strcmp(decoder_type, 'LMS'))
+    [decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu);
+    
+elseif (strcmp(decoder_type, 'sphere'))
+     % add other decoders here
+     
+end
 
 figure;
 stem(sum(abs(decodedData-transmitted)/2,1));
