@@ -1,4 +1,4 @@
-mu = 0.02;
+mu = 0.005;
 decoder_type = 'LMS';
 dat = MIMO_sim(mu, decoder_type);
 
