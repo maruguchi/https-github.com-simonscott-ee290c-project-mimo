@@ -1,4 +1,4 @@
-function decodedData = LMS_MIMO(mu)
+function decodedData = MIMO_sim(mu)
 
 % Transmit parameters
 Ntx = 4;
@@ -10,8 +10,6 @@ transmitLength = trainLength + dataLength;
 Nrx = 4;
 SNR = 10; %dB
 nse = 10^(-SNR/20);
-
-errors = zeros(Nrx,transmitLength);
 
 % The data that is transmitted
 training = randint(Ntx,trainLength)*2-1 + 1j*(randint(Ntx,trainLength)*2-1);
@@ -34,30 +32,8 @@ else
 end
 rx = H*transmitted + noise;
 
-% W is the MIMO decoder matrix at the receiver
-W = eye(Ntx,Nrx);
-decodedData = zeros(Ntx,dataLength);
-
-% For each instant of time at the receiver
-for time = 1:transmitLength
-    xn = rx(:,time);
-    
-    rn = W*xn;
-    yn = sign(real(rn)) + 1j*sign(imag(rn));
-    if (time <= trainLength)
-        en = rn - training(:,time);
-    else 
-        en = rn - yn;
-    end
-    
-    for k = 1:size(W,1)
-         W(k,:) = W(k,:) - mu*en(k)*xn';
-    end
-    
-    errors(:,transmitLength) = abs(en);
-    decodedData(:, time) = yn;
-        
-end
+% Decode the received signal
+[decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu);
 
 figure;
 stem(sum(abs(decodedData-transmitted)/2,1));
