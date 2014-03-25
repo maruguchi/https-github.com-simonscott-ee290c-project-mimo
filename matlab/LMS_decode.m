@@ -1,4 +1,4 @@
-function [decodedData, errors] = LMS_Decode(Ntx, Nrx, rx, training, mu)
+function [decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu)
 
 % Compute transmission, training and data lengths
 trainLength = size(training, 2);
@@ -16,7 +16,7 @@ for time = 1:transmitLength
     xn = rx(:,time);
     
     rn = W*xn;
-    yn = sign(real(rn)) + 1j*sign(imag(rn));
+    yn = 1/sqrt(2)*(sign(real(rn)) + 1j*sign(imag(rn)));
     if (time <= trainLength)
         en = rn - training(:,time);
     else 
