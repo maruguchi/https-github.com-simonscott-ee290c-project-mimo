@@ -41,12 +41,15 @@ rx = H*transmitted + noise;
 if(strcmp(decoder_type, 'LMS'))
     [decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu);
     
+elseif (strcmp(decoder_type, 'ML'))
+    [decodedData, errors] = ML_decode(Ntx, Nrx, rx, H);
+    
 elseif (strcmp(decoder_type, 'sphere'))
-     % add other decoders here
-     
+    [decodedData, errors] = sphere_decode(Ntx, Nrx, rx, training, mu);
+
 elseif (strcmp(decoder_type, 'direct'))
     [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H);
-     
+
 end
 
 figure;
