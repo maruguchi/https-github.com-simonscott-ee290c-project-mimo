@@ -45,7 +45,7 @@ elseif (strcmp(decoder_type, 'ML'))
     [decodedData, errors] = ML_decode(Ntx, Nrx, rx, H);
     
 elseif (strcmp(decoder_type, 'sphere'))
-    [decodedData, errors] = sphere_decode(Ntx, Nrx, rx, training, mu);
+    [decodedData, errors] = sphere_decode(rx, H);
 
 elseif (strcmp(decoder_type, 'direct'))
     [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H);
