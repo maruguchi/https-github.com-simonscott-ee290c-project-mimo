@@ -18,8 +18,8 @@ transmitted = [training data];
 
 % H is random channel matrix
 % Each element is a random number, with normal distribution with
-% mu=0 std_dev=1, for both real and imag parts
-% Normalize by 1/sqrt(2) to make mean magnitude of H = 1
+% mu=0 std_dev=1/sqrt(2), for both real and imag parts
+% Modeled version of H uses 802.11n channel model B
 global H;
 channel_type = 'random';
 if strcmp(channel_type, 'random')
@@ -48,8 +48,10 @@ elseif (strcmp(decoder_type, 'sphere'))
     [decodedData, errors] = sphere_decode(rx, H);
 
 elseif (strcmp(decoder_type, 'direct'))
-    [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H);
-
+    [trainIn, trainOut] = train(H, Nrx, SNR);
+    H_estimate = estimate_channel(trainIn, trainOut);
+    [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR);
+     
 end
 
 figure;

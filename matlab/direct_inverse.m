@@ -1,4 +1,4 @@
-function [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H)
+function [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H_est, SNR)
 
 % Compute transmission, training and data lengths
 trainLength = size(training, 2);
@@ -6,7 +6,8 @@ transmitLength = size(rx, 2);
 dataLength = transmitLength - trainLength;
 
 % W is the MIMO decoder matrix at the receiver
-W = inv(H); %temporary function uses direct MATLAB inverse
+kernel = H_est'*H_est + 1/SNR*eye(Nrx);
+W = kernel\H_est'; %temporary function uses direct MATLAB inverse
 decodedData = zeros(Ntx,dataLength);
 
 equalized = W*rx;
