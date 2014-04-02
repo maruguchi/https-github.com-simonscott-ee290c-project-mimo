@@ -1,25 +1,20 @@
-function [decodedData] = LMS_decode(Ntx, Nrx, rx, training, mu)
+function [decodedData] = LMS_decode_seeded(Ntx, Nrx, rx, mu, seed)
 
 % Compute transmission, training and data lengths
-trainLength = size(training, 2);
-transmitLength = size(rx, 2);
-dataLength = transmitLength - trainLength;
+dataLength = size(rx, 2);
 
 % W is the MIMO decoder matrix at the receiver
-W = eye(Nrx, Ntx);
+W = seed;
 decodedData = zeros(Ntx,dataLength);
 
 % For each instant of time at the receiver
-for time = 1:transmitLength
+for time = 1:dataLength
     xn = rx(:,time);
     
     rn = W*xn;
     yn = 1/sqrt(2)*(sign(real(rn)) + 1j*sign(imag(rn)));
-    if (time <= trainLength)
-        en = rn - training(:,time);
-    else 
-        en = rn - yn;
-    end
+
+    en = rn - yn;
     
     for k = 1:size(W,1)
          W(k,:) = W(k,:) - mu*en(k)*xn';

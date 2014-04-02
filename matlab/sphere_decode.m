@@ -1,4 +1,4 @@
-function [r, err] = sphere_decode(y, H)
+function [r] = sphere_decode(y, H)
 %
 %  SPHDEC: sphere decoder for linear STBC
 %     
@@ -61,9 +61,6 @@ for t = 1:1:transmitLength
     end
     
 end
-
-
-err = 0;
 
 clear SPHDEC_RADIUS RETVAL SYMBSETSIZE SEARCHFLAG;
 

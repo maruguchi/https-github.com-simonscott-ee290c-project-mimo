@@ -1,0 +1,32 @@
+decoder_type = {'LMS'; 'LMS_seeded'; 'direct'; 'ML'; 'sphere'};
+plotEnable = 0;
+numAvg = 10;
+mu = 1e-3;
+
+SNR_dB = linspace(0,30,11);
+SER = zeros(numAvg,length(SNR_dB));
+
+SER_averaged = zeros(length(decoder_type),length(SNR_dB));
+
+for type = 1:length(decoder_type)
+    for index = 1:length(SNR_dB)
+        tic
+        for avg = 1:numAvg
+            [dat, SER(avg,index)] = MIMO_sim(mu, SNR_dB(index), decoder_type(type), plotEnable);
+        end
+        toc
+    end
+
+    SER_averaged(type,:) = mean(SER,1);
+
+end
+
+figure;
+semilogx(SNR_dB, SER_averaged);
+legend('LMS','LMS_seeded','direct','ML','sphere');
+
+global H;
+cond(H);
+
+% Unseeded LMS should use mu ~ 0.01
+% Seeded LMS should use mu <= 10^-3

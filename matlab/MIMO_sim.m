@@ -1,4 +1,4 @@
-function decodedData = MIMO_sim(mu, decoder_type)
+function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, decoder_type, plotEnable)
 
 % Transmit parameters
 Ntx = 4;
@@ -8,8 +8,8 @@ transmitLength = trainLength + dataLength;
 
 % Receive parameters
 Nrx = 4;
-SNR = 20; %dB
-nse = 10^(-SNR/20);
+% SNR = 20; %dB
+nse = 10^(-SNR_dB/20);
 
 % The data that is transmitted
 training = 1/sqrt(2)*(randint(Ntx,trainLength)*2-1 + 1j*(randint(Ntx,trainLength)*2-1));
@@ -25,7 +25,7 @@ channel_type = 'random';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
-    [H, H_dynamic] = get_channel(Nrx, Ntx, 3);
+    [H, H_dynamic] = get_channel(Nrx, Ntx, 100);
 end
 
 % Add noise
@@ -35,29 +35,65 @@ if strcmp(noise_type, 'uniform')
 else
     noise = 1/sqrt(2)*(normrnd(0, nse, Nrx, transmitLength) + 1j*normrnd(0, nse, Nrx, transmitLength));
 end
-rx = H*transmitted + noise;
+
+time_varying = 1;
+if (strcmp(channel_type, 'modeled') && (time_varying == 1))
+    rx = (step(H_dynamic,transmitted.')).' + noise;
+else
+    rx = H*transmitted + noise;
+end
+
+[trainIn, trainOut] = train(H, Nrx, SNR_dB);
+H_estimate = estimate_channel(trainIn, trainOut);
+W_estimate = mmseWeights(H_estimate, Nrx, SNR_dB);
+
+if(strcmp(decoder_type, 'all'))
+    numDecoders = 5;
+    decodedData = zeros(Ntx, transmitLength, numDecoders);
+else
+    numDecoders = 1;
+    decodedData = zeros(Ntx, transmitLength);
+end
 
 % Decode the received signal
 if(strcmp(decoder_type, 'LMS'))
-    [decodedData, errors] = LMS_decode(Ntx, Nrx, rx, training, mu);
+    decodedData = LMS_decode(Ntx, Nrx, rx, training, mu_LMS);
     
+elseif(strcmp(decoder_type, 'LMS_seeded'))
+    decodedData = LMS_decode_seeded(Ntx, Nrx, rx, mu_LMS_seeded, W_estimate);
+
 elseif (strcmp(decoder_type, 'ML'))
-    [decodedData, errors] = ML_decode(Ntx, Nrx, rx, H);
+    decodedData = ML_decode(Ntx, Nrx, rx, H_estimate);
     
 elseif (strcmp(decoder_type, 'sphere'))
-    [decodedData, errors] = sphere_decode(rx, H);
+    decodedData = sphere_decode(rx, H_estimate);
 
 elseif (strcmp(decoder_type, 'direct'))
-    [trainIn, trainOut] = train(H, Nrx, SNR);
-    H_estimate = estimate_channel(trainIn, trainOut);
-    [decodedData, errors] = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR);
-     
+    decodedData = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR_dB);
+    
+elseif (strcmp(decoder_type, 'all'))
+    [decodedData(:,:,1)] = LMS_decode(Ntx, Nrx, rx, training, mu_LMS);
+    [decodedData(:,:,2)] = LMS_decode_seeded(Ntx, Nrx, rx, mu_LMS_seeded, W_estimate);
+    [decodedData(:,:,3)] = ML_decode(Ntx, Nrx, rx, H_estimate);
+    [decodedData(:,:,4)] = sphere_decode(rx, H_estimate);
+    [decodedData(:,:,5)] = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR_dB);
+        
 end
 
-figure;
-stem(sum(abs(decodedData-transmitted)/2,1));
+bitErrors = decodedData ~= repmat(transmitted, [1 1 numDecoders]);
+SER = sum(sum(bitErrors,1),2)/(transmitLength*Ntx);
 
-% figure;
-% plot(errors);
+if(strcmp(decoder_type, 'LMS'))
+    LMSdata = decodedData(:, trainLength+1:end);
+    SER = sum(LMSdata(:) ~= data(:))/(dataLength*Ntx);
+elseif(strcmp(decoder_type, 'all'))
+    LMSdata = decodedData(:, trainLength+1:end,1);
+    SER(1) = sum(LMSdata(:) ~= data(:))/(dataLength*Ntx);
+end
+
+if(plotEnable == 1)
+    figure;
+    stem(sum(abs(decodedData-transmitted)/2,1));
+end
 
 end

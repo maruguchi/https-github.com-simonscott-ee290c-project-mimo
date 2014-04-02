@@ -139,7 +139,7 @@ h = comm.MIMOChannel( ...
         'PathGainsOutputPort',       true);
     
 
-randStep = randi(1e4);
+randStep = randi(1e2);
 
 while (randStep > 0)
     step(h,ones(1,Nt));
@@ -150,7 +150,4 @@ for colInd = 1:Nt
     H(:, colInd) = step(h, [zeros(1, (colInd-1)) 1 zeros(1, Nt-colInd)]);    
 end
 
-release(h)
-reset(h)
- 
 end

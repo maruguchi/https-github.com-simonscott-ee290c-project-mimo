@@ -1,4 +1,4 @@
-function [decodedData, errors] = ML_Decode(Ntx, Nrx, rx, H_est)
+function [decodedData] = ML_Decode(Ntx, Nrx, rx, H_est)
 
 % Compute transmission length
 transmitLength = size(rx, 2);
@@ -26,7 +26,5 @@ for time = 1:transmitLength
     decodedData(:, time) = s_comb(min_idx, :);
         
 end
-
-errors = 0;
 
 end
