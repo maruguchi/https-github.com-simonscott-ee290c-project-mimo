@@ -1,6 +1,6 @@
 decoder_type = 'all';
 plotEnable = 0;
-numAvg = 20;
+numAvg = 10;
 mu_LMS = 0.01;
 mu_LMS_seeded = 1e-3;
 

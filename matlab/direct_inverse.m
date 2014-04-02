@@ -1,4 +1,4 @@
-function [decodedData] = direct_inverse(Ntx, Nrx, rx, training, H_est, SNR)
+function [decodedData] = direct_inverse(Ntx, Nrx, rx, H_est, SNR)
 
 % Compute data lengths
 dataLength = size(rx, 2);

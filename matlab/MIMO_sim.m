@@ -12,8 +12,8 @@ Nrx = 4;
 nse = 10^(-SNR_dB/20);
 
 % The data that is transmitted
-training = 1/sqrt(2)*(randint(Ntx,trainLength)*2-1 + 1j*(randint(Ntx,trainLength)*2-1));
-data = 1/sqrt(2)*(randint(Ntx,dataLength)*2-1 + 1j*(randint(Ntx,dataLength)*2-1));
+training = 1/sqrt(2)*(randi(2,Ntx,trainLength)*2-3 + 1j*(randi(2,Ntx,trainLength)*2-3));
+data = 1/sqrt(2)*(randi(2,Ntx,dataLength)*2-3 + 1j*(randi(2,Ntx,dataLength)*2-3));
 transmitted = [training data];
 
 % H is random channel matrix
@@ -21,11 +21,11 @@ transmitted = [training data];
 % mu=0 std_dev=1/sqrt(2), for both real and imag parts
 % Modeled version of H uses 802.11n channel model B
 global H;
-channel_type = 'random';
+channel_type = 'modeled';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
-    [H, H_dynamic] = get_channel(Nrx, Ntx, 100);
+    [H, H_dynamic] = get_channel(Nrx, Ntx, 3);
 end
 
 % Add noise
@@ -69,14 +69,14 @@ elseif (strcmp(decoder_type, 'sphere'))
     decodedData = sphere_decode(rx, H_estimate);
 
 elseif (strcmp(decoder_type, 'direct'))
-    decodedData = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR_dB);
+    decodedData = direct_inverse(Ntx, Nrx, rx, H_estimate, SNR_dB);
     
 elseif (strcmp(decoder_type, 'all'))
     [decodedData(:,:,1)] = LMS_decode(Ntx, Nrx, rx, training, mu_LMS);
     [decodedData(:,:,2)] = LMS_decode_seeded(Ntx, Nrx, rx, mu_LMS_seeded, W_estimate);
     [decodedData(:,:,3)] = ML_decode(Ntx, Nrx, rx, H_estimate);
     [decodedData(:,:,4)] = sphere_decode(rx, H_estimate);
-    [decodedData(:,:,5)] = direct_inverse(Ntx, Nrx, rx, training, H_estimate, SNR_dB);
+    [decodedData(:,:,5)] = direct_inverse(Ntx, Nrx, rx, H_estimate, SNR_dB);
         
 end
 
