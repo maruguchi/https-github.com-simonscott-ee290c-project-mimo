@@ -25,7 +25,7 @@ channel_type = 'modeled';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
-    [H, H_dynamic] = get_channel(Nrx, Ntx, 3);
+    [H, H_dynamic] = get_channel(Ntx, Nrx, 3);
 end
 
 % Add noise
