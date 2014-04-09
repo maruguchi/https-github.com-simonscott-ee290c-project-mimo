@@ -1,4 +1,4 @@
-channel_model = 'E';
+channel_model = 'B';
 decoder_type = 'direct';
 plotEnable = 0;
 numAvg = 10;
