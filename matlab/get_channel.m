@@ -1,4 +1,4 @@
-function [H, h] = get_channel(Nt, Nr, fd)
+function [H, h] = get_channel(Nt, Nr, fd, model)
 
 % Returns
 % - H: one channel matrix
@@ -81,14 +81,9 @@ Rs   = Rbit * Nos;          % Input sample rate
 % transmit and receive correlation matrices are calculated according to the
 % procedure given in [ <#10 1> ], [ <#10 2> ]. 
 
-tau = [0 10 20 30 40 50 60 70 80] * 1e-9; % Path delays, in seconds
+[tau, pdb, AS_Tx, AoD, AS_Rx, AoA] = get_802_11n_channel_params(model);
 
-% Average path gains of cluster 1, in dB
-pdb1 = [0 -5.4 -10.8 -16.2 -21.7 -inf -inf -inf -inf];      
-% Average path gains of cluster 2, in dB
-pdb2 = [-inf -inf -3.2 -6.3 -9.4 -12.5 -15.6 -18.7 -21.8];
-% Total average path gains for both clusters, in dB
-pdb = 10*log10(10.^(pdb1/10)+10.^(pdb2/10));
+pdb_sum = 10*log10(sum(10.^(pdb/10),1));
 
 % fd = 3;             % Maximum Doppler shift for all paths (identical)
 ds = doppler.bell;  % Bell doppler spectrum, with default parameters
@@ -98,52 +93,30 @@ ds = doppler.bell;  % Bell doppler spectrum, with default parameters
 TxSpacing = 0.5;
 RxSpacing = 0.5;
 
-% Spatial parameters on transmitter side:
-%   Angular spreads - Cluster 1
-AS_Tx_C1 = [14.4 14.4 14.4 14.4 14.4 -inf -inf -inf -inf];        
-%   Angular spreads - Cluster 2
-AS_Tx_C2 = [-inf -inf 25.4 25.4 25.4 25.4 25.4 25.4 25.4];        
-%   Mean angles of departure - Cluster 1
-AoD_C1 = [225.1 225.1 225.1 225.1 225.1 -inf -inf -inf -inf];     
-%   Mean angles of departure - Cluster 2
-AoD_C2 = [-inf -inf 106.5 106.5 106.5 106.5 106.5 106.5 106.5];   
-
-% Spatial parameters on receiver side:
-%   Angular spreads - Cluster 1
-AS_Rx_C1 = [14.4 14.4 14.4 14.4 14.4 -inf -inf -inf -inf];        
-%   Angular spreads - Cluster 2
-AS_Rx_C2 = [-inf -inf 25.2 25.2 25.2 25.2 25.2 25.2 25.2];        
-%   Mean angles of arrival - Cluster 1
-AoA_C1 = [4.3 4.3 4.3 4.3 4.3 -inf -inf -inf -inf];               
-%   Mean angles of arrival - Cluster 2
-AoA_C2 = [-inf -inf 118.4 118.4 118.4 118.4 118.4 118.4 118.4];   
-
 % Calculation of transmit and receive correlation arrays
 [TxCorrelationMatrix, RxCorrelationMatrix] = ...
-    calculateCorrMatrix(Nt, Nr, pdb1, pdb2, TxSpacing, RxSpacing, ...
-    AS_Tx_C1, AS_Tx_C2, AoD_C1, AoD_C2, ...
-    AS_Rx_C1, AS_Rx_C2, AoA_C1, AoA_C2);
+    correlationMatrix(Nt, Nr, pdb, TxSpacing, RxSpacing, ...
+    AS_Tx, AoD, AS_Rx, AoA);
 
 h = comm.MIMOChannel( ...
         'SampleRate',                Rs, ...
         'PathDelays',                tau, ...
-        'AveragePathGains',          pdb, ...
+        'AveragePathGains',          pdb_sum, ...
         'MaximumDopplerShift',       fd, ...               
         'DopplerSpectrum',           ds, ...    
         'NumTransmitAntennas',       Nt, ...                 
         'NumReceiveAntennas',        Nr, ...                 
         'TransmitCorrelationMatrix', TxCorrelationMatrix, ...
-        'ReceiveCorrelationMatrix',  RxCorrelationMatrix, ...   
-        'RandomStream',              'mt19937ar with seed', ... 
-        'Seed',                      99, ...
-        'PathGainsOutputPort',       true);
+        'ReceiveCorrelationMatrix',  RxCorrelationMatrix); %, ...   
+%         'RandomStream',              'mt19937ar with seed', ... 
+%         'Seed',                      99, ...
+%         'PathGainsOutputPort',       true);
     
+randWait = randi(1e2);
 
-randStep = randi(1e2);
-
-while (randStep > 0)
+while (randWait > 0)
     step(h,ones(1,Nt));
-    randStep = randStep - 1;
+    randWait = randWait - 1;
 end
     
 for colInd = 1:Nt

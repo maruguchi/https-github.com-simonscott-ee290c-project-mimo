@@ -1,4 +1,5 @@
-decoder_type = 'all';
+channel_model = 'E';
+decoder_type = 'direct';
 plotEnable = 0;
 numAvg = 10;
 mu_LMS = 0.01;
@@ -18,7 +19,7 @@ SER = zeros(numAvg,length(SNR_dB),numDecoders);
 for index = 1:length(SNR_dB)
     tic
     for avg = 1:numAvg
-        [dat, SER(avg,index, :)] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB(index), decoder_type, plotEnable);
+        [dat, SER(avg,index, :)] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB(index), decoder_type, plotEnable, channel_model);
     end
     toc
 end
