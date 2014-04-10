@@ -71,7 +71,10 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     // TODO: add the read interface
 
     // Wire up the RX data queue
-    rx_data_queue.io.enq <> io.data_h2d
+    rx_data_queue.io.enq.bits := io.data_h2d.bits
+    rx_data_queue.io.enq.valid := rx_data_queue_we
+    io.data_h2d.ready := rx_data_queue.io.enq.ready
+
     // TODO: add the read interface
 
     // Wire up the Decoded Data Memory
