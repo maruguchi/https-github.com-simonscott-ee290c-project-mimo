@@ -15,10 +15,10 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
 
     // From the host to the decoder
     val addr = UInt(width = params.addr_wd)
-    val data_h2d = Decoupled( new Complex(w = params.samp_wd) ).flip()
+    val data_h2d = Decoupled( new ComplexSInt(w = params.samp_wd) ).flip()
 
     // From the decoder to the host
-    val data_d2h = Decoupled( new Complex(w = params.symbol_wd) )
+    val data_d2h = Decoupled( UInt(width = params.symbol_wd) )
 
     override def clone: this.type = { new LMSDecoderIO().asInstanceOf[this.type]; }
 }
@@ -38,9 +38,9 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val rx_data_queue_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(2) ) & io.data_h2d.valid
 
     // Create the queues, registers and memory storage
-    val train_mem = Mem(new Complex(w = params.samp_wd), params.max_train_len)
-    val rx_data_queue = new Queue(new Complex(w = params.samp_wd), entries = params.fifo_len)
-    val decoded_data_queue = new Queue(new Complex(w = params.samp_wd), entries = params.fifo_len)
+    val train_mem = Mem(new ComplexSInt(w = params.samp_wd), params.max_train_len)
+    val rx_data_queue = new Queue(new ComplexSInt(w = params.samp_wd), entries = params.fifo_len)
+    val decoded_data_queue = new Queue(UInt(width = params.symbol_wd), entries = params.fifo_len)
 
     // Wire up the write interface to the registers
     when(config_reg_we) {
@@ -57,6 +57,9 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
             ConfigRegisters.modulation := io.data_h2d.bits.real(REG_WD-1, 0)
         }
         .elsewhen(mem_address === UInt(4)) {
+            ConfigRegisters.snr := io.data_h2d.bits.real(REG_WD-1, 0)
+        }
+        .elsewhen(mem_address === UInt(5)) {
             ConfigRegisters.start := io.data_h2d.bits.real(0)
         }
     }
@@ -77,7 +80,16 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     decoded_data_queue.io.deq <> io.data_d2h
     // TODO: add the write interface
 
+    // Create the matrix engine
+    val matrixEngine = Module(new MatrixEngine())
+
     // Create the channel estimator
     val channelEstimator = Module(new ChannelEstimator())
+
+    // Create the module to compute the initial weights
+    val initializeWeights = Module(new InitializeWeights())
+
+    // Create the actual adaptive decoder
+    val decoder = Module(new AdaptiveDecoder())
 }
 
