@@ -1,5 +1,5 @@
-channel_model = 'B';
-decoder_type = 'direct';
+channel_model = 'C';
+decoder_type = 'all';
 plotEnable = 0;
 numAvg = 10;
 mu_LMS = 0.01;

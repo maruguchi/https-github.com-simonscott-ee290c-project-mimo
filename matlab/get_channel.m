@@ -97,6 +97,9 @@ RxSpacing = 0.5;
 [TxCorrelationMatrix, RxCorrelationMatrix] = ...
     correlationMatrix(Nt, Nr, pdb, TxSpacing, RxSpacing, ...
     AS_Tx, AoD, AS_Rx, AoA);
+% [TxCorrelationMatrix, RxCorrelationMatrix] = ...
+%     calculateCorrMatrix_4clusters(Nt, Nr, pdb, TxSpacing, RxSpacing, ...
+%     AS_Tx, AoD, AS_Rx, AoA);
 
 h = comm.MIMOChannel( ...
         'SampleRate',                Rs, ...
@@ -112,12 +115,12 @@ h = comm.MIMOChannel( ...
 %         'Seed',                      99, ...
 %         'PathGainsOutputPort',       true);
     
-randWait = randi(1e2);
-
-while (randWait > 0)
-    step(h,ones(1,Nt));
-    randWait = randWait - 1;
-end
+% randWait = randi(1e2);
+% 
+% while (randWait > 0)
+%     step(h,ones(1,Nt));
+%     randWait = randWait - 1;
+% end
     
 for colInd = 1:Nt
     H(:, colInd) = step(h, [zeros(1, (colInd-1)) 1 zeros(1, Nt-colInd)]);    
