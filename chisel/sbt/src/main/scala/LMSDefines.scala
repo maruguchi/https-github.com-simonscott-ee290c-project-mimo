@@ -23,7 +23,7 @@ class Complex(w: Int) extends Bundle() {
     val real = SInt(width = w)
     val imag = SInt(width = w)
 
-    override def clone: this.type = { new Complex().asInstanceOf[this.type]; }
+    override def clone: this.type = { new Complex(w).asInstanceOf[this.type]; }
 }
 
 
