@@ -48,18 +48,15 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
             ConfigRegisters.ntx := io.data_h2d.bits.real(REG_WD-1, 0)
         }
         .elsewhen(mem_address === UInt(1)) {
-            ConfigRegisters.ntx := io.data_h2d.bits.real(REG_WD-1, 0)
-        }
-        .elsewhen(mem_address === UInt(2)) {
             ConfigRegisters.nrx := io.data_h2d.bits.real(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(3)) {
+        .elsewhen(mem_address === UInt(2)) {
             ConfigRegisters.train_len := io.data_h2d.bits.real(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(4)) {
+        .elsewhen(mem_address === UInt(3)) {
             ConfigRegisters.modulation := io.data_h2d.bits.real(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(5)) {
+        .elsewhen(mem_address === UInt(4)) {
             ConfigRegisters.start := io.data_h2d.bits.real(0)
         }
     }
@@ -74,7 +71,6 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     rx_data_queue.io.enq.bits := io.data_h2d.bits
     rx_data_queue.io.enq.valid := rx_data_queue_we
     io.data_h2d.ready := rx_data_queue.io.enq.ready
-
     // TODO: add the read interface
 
     // Wire up the Decoded Data Memory
