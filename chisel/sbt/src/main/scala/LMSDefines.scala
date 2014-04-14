@@ -22,6 +22,7 @@ case class LMSParams()
     val addr_wd = log2Up( max(num_registers, 6) )
     val samp_wd = 10
     val symbol_wd = log2Up(64)
+    val fix_pt_wd = 16
 }
 
 
@@ -49,6 +50,10 @@ object LMSConstants
     val MOD_QPSK = UInt(1)
     val MOD_16QAM = UInt(2)
     val MOD_64QAM = UInt(3)
+
+    // Matrix Engine operations
+    val MAT_MAT_MULT = UInt(0)
+    val CONJ_TRANSP = UInt(1)
 
     // Fixed bit-widths (i.e. not parameterizable)
     val REG_WD = 4
