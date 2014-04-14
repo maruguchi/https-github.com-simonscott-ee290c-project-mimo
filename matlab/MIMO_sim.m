@@ -1,13 +1,13 @@
 function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, decoder_type, plotEnable, channel_model)
 
 % Transmit parameters
-Ntx = 4;
+Ntx = 2;
 trainLength = 1000;
 dataLength = 1000;
 transmitLength = trainLength + dataLength;
 
 % Receive parameters
-Nrx = 4;
+Nrx = 2;
 % SNR = 20; %dB
 nse = 10^(-SNR_dB/20);
 
@@ -25,7 +25,7 @@ channel_type = 'modeled';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
-    [H, H_dynamic] = get_channel(Nrx, Ntx, 2, channel_model);
+    [H, H_dynamic] = get_channel(Nrx, Ntx, 0.02, channel_model);
 end
 
 % Add noise

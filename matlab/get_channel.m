@@ -64,9 +64,9 @@ S = RandStream('swb2712', 'Seed', 12345); % Set a local random number stream
 M = 2;                      % Modulation order
 hModem = modem.pskmod(M);   % 2-PSK modulator object
 
-Rsym = 10e3;                % Input symbol rate
+Rsym = 20;                % Input symbol rate
 Rbit = Rsym * log2(M);      % Input bit rate
-Nos  = 4;                   % Oversampling factor
+Nos  = 1;                   % Oversampling factor
 Rs   = Rbit * Nos;          % Input sample rate 
 
 %% Channel Model B
@@ -111,13 +111,6 @@ h = comm.MIMOChannel( ...
 %         'RandomStream',              'mt19937ar with seed', ... 
 %         'Seed',                      99, ...
 %         'PathGainsOutputPort',       true);
-    
-randWait = randi(1e2);
-
-while (randWait > 0)
-    step(h,ones(1,Nt));
-    randWait = randWait - 1;
-end
     
 for colInd = 1:Nt
     H(:, colInd) = step(h, [zeros(1, (colInd-1)) 1 zeros(1, Nt-colInd)]);    
