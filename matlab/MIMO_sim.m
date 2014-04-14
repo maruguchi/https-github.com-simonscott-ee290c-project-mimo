@@ -11,6 +11,10 @@ Nrx = 2;
 % SNR = 20; %dB
 nse = 10^(-SNR_dB/20);
 
+% Channel time-varying parameters
+time_varying = 1;
+doppler_f = 3;
+
 % The data that is transmitted
 training = 1/sqrt(2)*(randi(2,Ntx,trainLength)*2-3 + 1j*(randi(2,Ntx,trainLength)*2-3));
 data = 1/sqrt(2)*(randi(2,Ntx,dataLength)*2-3 + 1j*(randi(2,Ntx,dataLength)*2-3));
@@ -25,7 +29,7 @@ channel_type = 'modeled';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
-    [H, H_dynamic] = get_channel(Nrx, Ntx, 0.02, channel_model);
+    [H, H_dynamic] = get_channel(Nrx, Ntx, doppler_f, channel_model);
 end
 
 % Add noise
@@ -36,7 +40,6 @@ else
     noise = 1/sqrt(2)*(normrnd(0, nse, Nrx, transmitLength) + 1j*normrnd(0, nse, Nrx, transmitLength));
 end
 
-time_varying = 0;
 if (strcmp(channel_type, 'modeled') && (time_varying == 1))
     rx = (step(H_dynamic,transmitted.')).' + noise;
 else
