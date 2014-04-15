@@ -14,6 +14,7 @@ case class LMSParams()
     // Simulation parameters
     val max_ntx = 4
     val max_nrx = 4
+    val max_ntx_nrx = max(max_ntx, max_nrx)
     val max_train_len = 8
     val fifo_len = 16
     val num_registers = 6

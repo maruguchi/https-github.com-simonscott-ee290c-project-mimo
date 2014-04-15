@@ -5,14 +5,33 @@ import Node._
 import scala.collection.mutable.HashMap
 import scala.math._
 import LMSConstants._
-
-// New idea:
-// To do the matrix-vec multiply in 1 cycle (ie. W*x, while decoding stream), make a dot-product module
-// and instantiate it once for each row in W.
+import ComplexMathFunctions._
 
 
-// Notes from discussion on April 10:
-// Support matrix-vec multiply, matrix-matrix multiply and conjugate transpose
+// Helper Functions. These functions generate new hardware every time that they are called.
+object ComplexMathFunctions
+{
+    // Function to perform a complex multiply
+    def complex_mult(x: ComplexSFix, y: ComplexSFix): ComplexSFix =
+    {
+        val z = new ComplexSFix(w=x.width)
+        z.real := x.real * y.real - x.imag * y.imag
+        z.imag := x.real * y.imag + x.imag * y.real
+        return z
+    }
+
+    // Function to compute dot-product of two vectors
+    def dot(vecA: Vec[ComplexSFix], vecB: Vec[ComplexSFix], vecLen: Int): ComplexSFix =
+    {
+        val result = new ComplexSFix(w=vecA(0).width)
+
+        for (i <- 0 until vecLen)
+            result := result + complex_mult( vecA(i), vecB(i) )
+
+        return result
+    }
+}
+
 
 class MatrixEngineIO(implicit params: LMSParams) extends Bundle()
 {
@@ -20,29 +39,15 @@ class MatrixEngineIO(implicit params: LMSParams) extends Bundle()
     // There is a separate port for each matrix row, and each of these ports
     // contains a sub-port for each element in that row. Therefore, for
     // a 4x4 matrix, 16 values are passed in a single clock cycle
-    val matrixIn = Vec.fill(max(params.max_ntx, params.max_nrx)){
-                    Vec.fill(max(params.max_ntx, params.max_nrx)){new ComplexSFix(w=params.fix_pt_wd)}}
+    val matrixIn = Vec.fill(params.max_ntx_nrx){
+                    Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd)}}
 
     // The vector input port
-    val vectorIn = Vec.fill(max(params.max_ntx, params.max_nrx)){new ComplexSFix(w=params.fix_pt_wd)}
+    val vectorIn = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd)}
 
     // Matrix (or vector) output port
     // Clock out a column on each clock cycle
-    val result = Vec.fill(max(params.max_ntx, params.max_nrx)){new ComplexSFix(w=params.fix_pt_wd)}
-
-    // Input ports to specify the size of each input matrix
-    val matrixRows = UInt()
-    val matrixCols = UInt()
-    val vectorLen = UInt()
-
-    // Output port specifying the size of the resulting vector
-    val resultLen = UInt()
-
-    // validIn: hold this high while clocking in the matrix, vector and their sizes
-    // The matrix operation starts as soon as validIn goes low
-    // validOut: goes high as soon as the matrix computation is complete.
-    val validIn = Bool()
-    val validOut = Bool()
+    val result = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd)}
 }
 
 
@@ -51,10 +56,14 @@ class MatrixEngine(implicit params: LMSParams) extends Module
 {
     val io = new MatrixEngineIO()
 
-    // Function to compute dot-product of two vectors
-    //def dot(vecA: ComplexSFix, vecB: ComplexSFix): ComplexSFix = {
-        
-    //}
+    // Call dot once for each row of matrix
+    // Each result is a different element in the output Vec
+    // If the input matrices/vectors are smaller than the maximum size,
+    // the computation is still done.
+    for (i <- 0 until params.max_ntx_nrx)
+    {
+        io.result(i) := Reg(next = dot(io.matrixIn(i), io.vectorIn, params.max_ntx_nrx))
+    }
 }
 
 
