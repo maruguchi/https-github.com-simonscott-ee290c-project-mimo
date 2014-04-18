@@ -14,7 +14,7 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
     // The DecoupledIO interface contains 3 fields: ready (in), valid (out) and bits (out)
 
     // From the host to the decoder
-    val addr = UInt(width = params.addr_wd)
+    val addr = UInt(width = params.addr_wd).asInput
     val data_h2d = Decoupled( new ComplexSInt(w = params.samp_wd) ).flip()
 
     // From the decoder to the host
@@ -39,8 +39,8 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Create the queues, registers and memory storage
     val train_mem = Mem(new ComplexSInt(w = params.samp_wd), params.max_train_len)
-    val rx_data_queue = new Queue(new ComplexSInt(w = params.samp_wd), entries = params.fifo_len)
-    val decoded_data_queue = new Queue(UInt(width = params.symbol_wd), entries = params.fifo_len)
+    val rx_data_queue = Module(new Queue(new ComplexSInt(w = params.samp_wd), entries = params.fifo_len))
+    val decoded_data_queue = Module(new Queue(UInt(width = params.symbol_wd), entries = params.fifo_len))
 
     // Wire up the write interface to the registers
     when(config_reg_we) {
