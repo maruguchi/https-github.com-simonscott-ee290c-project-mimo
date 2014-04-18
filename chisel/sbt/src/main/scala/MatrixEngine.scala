@@ -15,14 +15,12 @@ object ComplexMathFunctions
     // Function to perform a complex multiply
     def complex_mult(x: ComplexSFix, y: ComplexSFix): ComplexSFix =
     {
-//        val z = new ComplexSFix(w=x.width)
-//       val minus_1 = new SFix(exp = 0, raw = SInt(-1))
+        val z = new ComplexSFix(w=x.real.raw.width, e=0)
+        val minus_1 = new SFix(exp = 0, raw = SInt(-1))
 
-//        z.real := (x.real * y.real) // + (x.imag * y.imag * minus_1)
-//        z.imag := x.real * y.imag  // + x.imag * y.real
-//        return z
-
-        return x
+        z.real := (x.real * y.real) + (x.imag * y.imag * minus_1)
+        z.imag := x.real * y.imag + x.imag * y.real
+        return z
     }
 
     // Function to add two complex numbers
@@ -53,8 +51,6 @@ object ComplexMathFunctions
     def makeComplexSFix(w: Int, r: Int, i: Int): ComplexSFix =
     {
         val x = new ComplexSFix(w = w, e = 0)
-        //x.real := new SFix(exp=0, raw=SInt(r))
-        //x.imag := new SFix(exp=0, raw=SInt(i))
         x.real.raw := SInt(r, width=w)
         x.imag.raw := SInt(i, width=w)
         return x 
@@ -97,7 +93,7 @@ class MatrixEngine(implicit params: LMSParams) extends Module
 
 
 // Tester for testing the matrix engine
-class MatrixEngineTests(c: LMSDecoder) extends Tester(c)
+class MatrixEngineTests(c: MatrixEngine, params: LMSParams) extends Tester(c)
 {
     val test_matrix_in_r = Array( Array(1,2,3,4), Array(11,12,13,14), Array(21,22,23,24), Array(31,32,33,34) )
     val test_matrix_in_i = Array( Array(1,2,3,4), Array(11,12,13,14), Array(21,22,23,24), Array(31,32,33,34) )
@@ -106,33 +102,28 @@ class MatrixEngineTests(c: LMSDecoder) extends Tester(c)
     val test_vec_out_r = Array(1, 11, 21, 31)
     val test_vec_out_i = Array(1, 11, 21, 31)
 
-    //val test_matrix_in = test_matrix_in_r.zip(test_matrix_in_i).map{ case(r, i) => new ComplexSFix(r, i, w=params.fix_pt_wd) }
-    //val test_matrix_in = test_matrix_in_r
-    //val test_vec_in = test_vec_in_r.zip(test_vec_in_i).map{ case(r, i) => makeComplexSFix(w=c.params.fix_pt_wd, r, i) }
-    //val test_vec_out = test_vec_out_r.zip(test_vec_out_i).map{ case(r, i) => makeComplexSFix(w=c.params.fix_pt_wd, r, i) }
-
     for (t <- 0 until 1)
     {
         // Apply inputs
-        for(i <- 0 until c.params.max_ntx_nrx) {
-            for(j <- 0 until c.params.max_ntx_nrx) {
-                poke(c.matrixEngine.io.matrixIn(i)(j).real.raw, test_matrix_in_r(i)(j))
-                poke(c.matrixEngine.io.matrixIn(i)(j).imag.raw, test_matrix_in_i(i)(j))
+        for(i <- 0 until params.max_ntx_nrx) {
+            for(j <- 0 until params.max_ntx_nrx) {
+                poke(c.io.matrixIn(i)(j).real.raw, test_matrix_in_r(i)(j))
+                poke(c.io.matrixIn(i)(j).imag.raw, test_matrix_in_i(i)(j))
             }
-            poke(c.matrixEngine.io.vectorIn(i).real.raw, test_vec_in_r(i))
-            poke(c.matrixEngine.io.vectorIn(i).imag.raw, test_vec_in_i(i))
+            poke(c.io.vectorIn(i).real.raw, test_vec_in_r(i))
+            poke(c.io.vectorIn(i).imag.raw, test_vec_in_i(i))
         }
 
         // Clock the module
         step(1)
+        step(1)
 
         // Check the output
-        for(i <- 0 until c.params.max_ntx_nrx) {
-            expect(c.matrixEngine.io.result(i).real.raw, test_vec_out_r(i))
-            expect(c.matrixEngine.io.result(i).imag.raw, test_vec_out_i(i))
+        for(i <- 0 until params.max_ntx_nrx) {
+            expect(c.io.result(i).real.raw, test_vec_out_r(i))
+            expect(c.io.result(i).imag.raw, test_vec_out_i(i))
         }
     }
 }
-
 
 

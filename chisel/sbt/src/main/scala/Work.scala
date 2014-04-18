@@ -10,8 +10,8 @@ object Work {
     val params = new LMSParams()
 
     // Test the matrix engine
-    chiselMainTest( args.slice(1, args.length), () => Module(new LMSDecoder(params)) ) {
-        c => new MatrixEngineTests(c) }
+    chiselMainTest( args.slice(1, args.length), () => Module(new MatrixEngine()(params)) ) {
+        c => new MatrixEngineTests(c, params) }
   } 
 
 }   
