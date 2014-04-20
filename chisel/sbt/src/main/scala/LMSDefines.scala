@@ -24,6 +24,7 @@ case class LMSParams()
     val samp_wd = 10
     val symbol_wd = log2Up(64)
     val fix_pt_wd = 16
+    val fix_pt_exp = 8
 }
 
 
@@ -37,12 +38,13 @@ class ComplexSInt(w: Int, e: Int = 0) extends Bundle()
 }
 
 // The complex type (signed fixed-point integer)
-class ComplexSFix(w: Int, e: Int = 0) extends Bundle()
+class ComplexSFix(w: Int, e: Int = -999) extends Bundle()
 {
-    val real = SFix(exp = e, width = w)
-    val imag = SFix(exp = e, width = w)
+    val e1 = if(e == -999) w else e
+    val real = SFix(exp = e1, width = w)
+    val imag = SFix(exp = e1, width = w)
 
-    override def clone: this.type = { new ComplexSFix(w, e).asInstanceOf[this.type]; }
+    override def clone: this.type = { new ComplexSFix(w, e1).asInstanceOf[this.type]; }
 }
 
 

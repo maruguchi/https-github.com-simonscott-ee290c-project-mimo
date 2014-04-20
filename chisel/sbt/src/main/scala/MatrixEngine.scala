@@ -15,8 +15,8 @@ object ComplexMathFunctions
     // Function to perform a complex multiply
     def complex_mult(x: ComplexSFix, y: ComplexSFix): ComplexSFix =
     {
-        val z = new ComplexSFix(w=x.real.raw.width, e=0)
-        val minus_1 = new SFix(exp = 0, raw = SInt(-1))
+        val z = new ComplexSFix(w=x.real.raw.width, e=x.real.raw.width)
+        val minus_1 = new SFix(exp = x.real.raw.width, raw = SInt(-1))
 
         z.real := (x.real * y.real) + (x.imag * y.imag * minus_1)
         z.imag := x.real * y.imag + x.imag * y.real
@@ -50,7 +50,7 @@ object ComplexMathFunctions
     // Function to create a new complex signed fix-pt value and initialize it
     def makeComplexSFix(w: Int, r: Int, i: Int): ComplexSFix =
     {
-        val x = new ComplexSFix(w = w, e = 0)
+        val x = new ComplexSFix(w = w, e = w)
         x.real.raw := SInt(r, width=w)
         x.imag.raw := SInt(i, width=w)
         return x 
@@ -96,11 +96,11 @@ class MatrixEngine(implicit params: LMSParams) extends Module
 class MatrixEngineTests(c: MatrixEngine, params: LMSParams) extends Tester(c)
 {
     val test_matrix_in_r = Array( Array(1,2,3,4), Array(11,12,13,14), Array(21,22,23,24), Array(31,32,33,34) )
-    val test_matrix_in_i = Array( Array(1,2,3,4), Array(11,12,13,14), Array(21,22,23,24), Array(31,32,33,34) )
+    val test_matrix_in_i = Array( Array(0,0,0,0), Array(0,0,0,0), Array(0,0,0,0), Array(0,0,0,0) )
     val test_vec_in_r = Array(1, 0, 0, 0)
-    val test_vec_in_i = Array(1, 0, 0, 0)
+    val test_vec_in_i = Array(0, 0, 0, 0)
     val test_vec_out_r = Array(1, 11, 21, 31)
-    val test_vec_out_i = Array(1, 11, 21, 31)
+    val test_vec_out_i = Array(0, 0, 0, 0)
 
     for (t <- 0 until 1)
     {
