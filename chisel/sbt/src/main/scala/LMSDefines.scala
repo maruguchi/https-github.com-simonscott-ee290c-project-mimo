@@ -29,12 +29,12 @@ case class LMSParams()
 
 
 // The complex type (signed integer)
-class ComplexSInt(w: Int, e: Int = 0) extends Bundle()
+class ComplexSInt(w: Int) extends Bundle()
 {
     val real = SInt(width = w)
     val imag = SInt(width = w)
 
-    override def clone: this.type = { new ComplexSInt(w, e).asInstanceOf[this.type]; }
+    override def clone: this.type = { new ComplexSInt(w).asInstanceOf[this.type]; }
 }
 
 // The complex type (signed fixed-point integer)
@@ -44,7 +44,7 @@ class ComplexSFix(w: Int, e: Int = -999) extends Bundle()
     val real = SFix(exp = e1, width = w)
     val imag = SFix(exp = e1, width = w)
 
-    override def clone: this.type = { new ComplexSFix(w, e1).asInstanceOf[this.type]; }
+    override def clone: this.type = { new ComplexSFix(w, e).asInstanceOf[this.type]; }
 }
 
 
