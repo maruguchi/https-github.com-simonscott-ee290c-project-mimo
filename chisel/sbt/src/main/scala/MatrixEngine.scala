@@ -16,7 +16,6 @@ object ComplexMathFunctions
     def complex_mult(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix =
     {
         val z = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
-        val minus_1 = new SFix(exp = x.real.exp, raw = SInt(-1))
 
         z.real := (x.real * y.real) - (x.imag * y.imag)
         z.imag := x.real * y.imag + x.imag * y.real
@@ -110,18 +109,18 @@ class MatrixEngineTests(c: MatrixEngine, params: LMSParams) extends Tester(c)
     val test_vec_out_r = Array(16.08, 8.47, 25.60, 2.46  )
     val test_vec_out_i = Array(37.19, 33.17, 25.96, 43.77  )
 
-    val threshold = 0.1
+    val threshold = 0.01
 
     for (t <- 0 until 1)
     {
         // Apply inputs
         for(i <- 0 until params.max_ntx_nrx) {
             for(j <- 0 until params.max_ntx_nrx) {
-                poke(c.io.matrixIn(i)(j).real.raw, ((test_matrix_in_r(i)(j)).toDouble * pow(2, params.fix_pt_exp)).toInt)
-                poke(c.io.matrixIn(i)(j).imag.raw, (test_matrix_in_i(i)(j) * pow(2, params.fix_pt_exp)).toInt)
+                poke(c.io.matrixIn(i)(j).real.raw, ((test_matrix_in_r(i)(j)).toDouble * pow(2, params.fix_pt_frac_bits)).toInt)
+                poke(c.io.matrixIn(i)(j).imag.raw, (test_matrix_in_i(i)(j) * pow(2, params.fix_pt_frac_bits)).toInt)
             }
-            poke(c.io.vectorIn(i).real.raw, (test_vec_in_r(i) * pow(2, params.fix_pt_exp)).toInt)
-            poke(c.io.vectorIn(i).imag.raw, (test_vec_in_i(i) * pow(2, params.fix_pt_exp)).toInt)
+            poke(c.io.vectorIn(i).real.raw, (test_vec_in_r(i) * pow(2, params.fix_pt_frac_bits)).toInt)
+            poke(c.io.vectorIn(i).imag.raw, (test_vec_in_i(i) * pow(2, params.fix_pt_frac_bits)).toInt)
         }
 
         // Clock the module
@@ -130,12 +129,10 @@ class MatrixEngineTests(c: MatrixEngine, params: LMSParams) extends Tester(c)
 
         // Check the output
         for(i <- 0 until params.max_ntx_nrx) {
-            var real_expected = (test_vec_out_r(i) * pow(2, params.fix_pt_exp)).toInt
-            var real_comp = ((if(peek(c.io.result(i).real.raw) >= 32768) (65536 - peek(c.io.result(i).real.raw)) else
-                            (peek(c.io.result(i).real.raw)))).toDouble * pow(2, -params.fix_pt_exp)
-            var imag_expected = (test_vec_out_i(i) * pow(2, params.fix_pt_exp)).toInt
-            var imag_comp = ((if(peek(c.io.result(i).imag.raw) >= 32768) (65536 - peek(c.io.result(i).imag.raw)) else
-                            (peek(c.io.result(i).imag.raw)))).toDouble * pow(2, -params.fix_pt_exp)
+            var real_comp = ((if(peek(c.io.result(i).real.raw) >= pow(2, params.fix_pt_wd-1).toInt) (pow(2, params.fix_pt_wd).toInt - peek(c.io.result(i).real.raw)) else
+                            (peek(c.io.result(i).real.raw)))).toDouble * pow(2, -params.fix_pt_frac_bits)
+            var imag_comp = ((if(peek(c.io.result(i).imag.raw) >= pow(2, params.fix_pt_wd-1).toInt) (pow(2, params.fix_pt_wd).toInt - peek(c.io.result(i).imag.raw)) else
+                            (peek(c.io.result(i).imag.raw)))).toDouble * pow(2, -params.fix_pt_frac_bits)
 
             expect( abs(real_comp - test_vec_out_r(i)) < threshold, s"Checking real value. Expect: ${test_vec_out_r(i)}. Got: $real_comp" )
             expect( abs(imag_comp - test_vec_out_i(i)) < threshold, s"Checking imag value. Expect: ${test_vec_out_i(i)}. Got: $imag_comp" )

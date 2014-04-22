@@ -3,6 +3,7 @@
 K ?= 16
 L ?= 16
 R ?= 0.0
+T ?= MatrixEngine
 
 vlsi:
 	mkdir -p vlsi/generated-src
@@ -14,7 +15,7 @@ default:
 
 test:
 	mkdir -p test/generated-src
-	cd sbt; sbt "run -params_$(K)_$(L)_$(R) --test --genHarness --compile --targetDir ../test/generated-src"
+	cd sbt; sbt "run -params_$(K)_$(L)_$(R) -testmodule_$(T) --test --genHarness --compile --targetDir ../test/generated-src"
 
 debug:
 	mkdir -p test/generated-src
