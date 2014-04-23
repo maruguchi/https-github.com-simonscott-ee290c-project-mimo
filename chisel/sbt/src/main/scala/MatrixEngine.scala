@@ -32,6 +32,16 @@ object ComplexMathFunctions
         return result
     }
 
+    // Function to subtract two complex numbers: x - y
+    def complex_sub(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix =
+    {
+        val result_wd = max(x.real.raw.width, y.real.raw.width)
+        val result = makeComplexSFix(w = result_wd, r = 0, i = 0)
+        result.real := x.real - y.real
+        result.imag := x.imag - y.imag
+        return result
+    }
+
     // Function to compute dot-product of two vectors
     def dot(vecA: Vec[ComplexSFix], vecB: Vec[ComplexSFix], vecLen: Int)(implicit params: LMSParams): ComplexSFix =
     {
@@ -53,6 +63,14 @@ object ComplexMathFunctions
         x.real.raw := SInt(r, width=w)
         x.imag.raw := SInt(i, width=w)
         return x 
+    }
+
+    // Function to convert double numbers to fixed point
+    def conv_double_to_fp(d: Double, fp_frac_bits: Int, fp_bit_wd: Int): Int = 
+    {
+        var fp = (d * pow(2, fp_frac_bits)).toInt
+        fp = if(fp < 0) ( pow(2, fp_bit_wd).toInt + fp ) else fp
+        return fp
     }
 }
 
