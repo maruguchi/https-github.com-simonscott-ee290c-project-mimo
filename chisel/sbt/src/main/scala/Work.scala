@@ -25,7 +25,7 @@ object Work {
                 c => new MatrixEngineTests(c, params) }
  
         case "AdaptiveDecoder" =>
-            chiselMainTest( args.slice(2, args.length), () => Module(new AdaptiveDecoder()(params)) ) {
+            chiselMainTest( args.slice(2, args.length), () => Module(new AdaptiveDecoderWithMatrixEng()(params)) ) {
                 c => new AdaptiveDecoderTests(c, params) }
     }
   }
