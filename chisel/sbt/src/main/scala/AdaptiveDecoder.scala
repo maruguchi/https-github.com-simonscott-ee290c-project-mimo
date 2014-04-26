@@ -11,7 +11,6 @@ import FixedPoint._
 /*
  * Important TODOs:
  * 1.) Make more thorough test-bench: specifically, need to test with noise
- * 3.) Adapt the matrix
  */
 
 // I/O interface for the adaptive decoder
@@ -20,7 +19,7 @@ class AdaptiveDecoderIO(implicit params: LMSParams) extends Bundle()
     val wSeed = Vec.fill(params.max_ntx_nrx){
                     Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput}}
 
-    val samples = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSInt(w = params.samp_wd)} ).flip()
+    val samples = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)} ).flip()
 
     // This contains integers representing the symbols, e.g. 0 for (0 + 0j), 1 for (0 + 1j), 2 for (1 + 0j) 
     val decodedData = Decoupled( Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)} )
@@ -33,6 +32,8 @@ class AdaptiveDecoderIO(implicit params: LMSParams) extends Bundle()
     // The AdaptiveDecoder will only load samples from RX Data Queue when this is high (and samples are available).
     // Keep this low when W is being recomputed (begin of new frame).
     val processSamples = Bool().asInput
+
+    val error = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}
 }
 
 
@@ -42,13 +43,12 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
     // Create the I/O
     val io = new AdaptiveDecoderIO()
 
-    // Convert samples to fixed point
-    // Samples are ints: treat top 4 bits as integer, rest as fractional.
+    // Convert samples to the correct bit width (still as fixed point)
     val samples_fp = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}
     for(i <- 0 until params.max_ntx_nrx)
     {
-        samples_fp(i).real.raw := io.samples.bits(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
-        samples_fp(i).imag.raw := io.samples.bits(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
+        samples_fp(i).real.raw := io.samples.bits(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+        samples_fp(i).imag.raw := io.samples.bits(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
     }
 
 
@@ -56,7 +56,7 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
 
     // Create wires
     val processSamples = (io.processSamples & io.samples.valid & (~io.resetW) & io.decodedData.ready)
-    val processSamples_s2 = Reg(next = processSamples)
+    val processSamples_s2 = Reg(init = Bool(false), next = processSamples)
 
     val nextW = Vec.fill(params.max_ntx_nrx){ Vec.fill(params.max_ntx_nrx){
                 new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
@@ -145,8 +145,10 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
 
     // Compute the new W values
     val error = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}
-    val mu_fp = new SFix( params.fix_pt_exp, SInt( conv_double_to_fp(params.mu, params.fix_pt_frac_bits, params.fix_pt_wd) ) )
+    val mu_fp = SFix(exp=params.fix_pt_exp, width=params.fix_pt_wd)
+    mu_fp.raw := SInt( conv_double_to_fp(params.mu, params.fix_pt_frac_bits, params.fix_pt_wd), width=params.fix_pt_wd )
 
+    // Iterate through decoded symbols
     for(i <- 0 until params.max_ntx_nrx)
     {
         // Compute error, using a lookup table to compare computed symbol to predicted symbol
@@ -164,6 +166,7 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
             val error_mu_samp = complex_mult(error_mu, samples_fp_s2(j))
             nextW(i)(j) := complex_sub(w_s2(i)(j), error_mu_samp)
         }
+        io.error(i) <> error(i)
     }
 }
 
@@ -174,13 +177,15 @@ class AdaptiveDecoderWithMatricEngIO(implicit params: LMSParams) extends Bundle(
     val wSeed = Vec.fill(params.max_ntx_nrx){
                     Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput}}
 
-    val samples = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSInt(w = params.samp_wd)} ).flip()
+    val samples = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)} ).flip()
 
     val decodedData = Decoupled( Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)} )
 
     val resetW = Bool().asInput
     
     val processSamples = Bool().asInput
+
+    val error = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}
 }
 
 
@@ -198,6 +203,7 @@ class AdaptiveDecoderWithMatrixEng(implicit params: LMSParams) extends Module
     adaptiveDecoder.io.decodedData      <> io.decodedData
     adaptiveDecoder.io.resetW           := io.resetW
     adaptiveDecoder.io.processSamples   := io.processSamples
+    adaptiveDecoder.io.error            <> io.error
 }
 
 
@@ -242,33 +248,42 @@ class AdaptiveDecoderTests(c: AdaptiveDecoderWithMatrixEng, params: LMSParams) e
     // Clock the module
     step(1)
 
-    // Load the samples
-    poke(c.io.resetW, 0)
-    poke(c.io.processSamples, 1)
-    poke(c.io.samples.valid, 1)
-    poke(c.io.decodedData.ready, 1)
-    for(i <- 0 until params.max_ntx_nrx) {
-        poke( c.io.samples.bits(i).real, conv_double_to_samp(test_samples_in_r(i), params.samp_int_bits, params.samp_wd) )
-        poke( c.io.samples.bits(i).imag, conv_double_to_samp(test_samples_in_i(i), params.samp_int_bits, params.samp_wd) )
-    }
+    // Iterate through the tests
+    for(t <- 0 until 10)
+    {
+        // Load the samples
+        poke(c.io.resetW, 0)
+        poke(c.io.processSamples, 1)
+        poke(c.io.samples.valid, 1)
+        poke(c.io.decodedData.ready, 1)
+        for(i <- 0 until params.max_ntx_nrx) {
+            poke( c.io.samples.bits(i).real.raw, conv_double_to_fp(test_samples_in_r(i), params.samp_frac_bits, params.samp_wd) )
+            poke( c.io.samples.bits(i).imag.raw, conv_double_to_fp(test_samples_in_i(i), params.samp_frac_bits, params.samp_wd) )
+        }
 
-    // Clock the module
-    step(2)
+        // Clock the module
+        step(1)
 
-    // Peek at various stages of the computation
-    expect(c.io.decodedData.valid, 1)
-    peek(c.adaptiveDecoder.io.toMatEngine.vectorIn)
-    val y = peek(c.adaptiveDecoder.io.toMatEngine.result)
+        // Peek at various stages of the computation
+        peek(c.adaptiveDecoder.io.toMatEngine.vectorIn)
+        val y = peek(c.adaptiveDecoder.io.toMatEngine.result)
 
-    for(yi <- y) {
-        print( conv_fp_to_double(yi, params.fix_pt_frac_bits, params.fix_pt_wd) )
-        print(", ")
-    }
-    println()
+        for(yi <- y) {
+            print( conv_fp_to_double(yi, params.fix_pt_frac_bits, params.fix_pt_wd) )
+            print(", ")
+        }
+        println()
 
-    // Check that the symbols were decoded correctly
-    for(i <- 0 until params.max_ntx_nrx) {
-        expect( c.io.decodedData.bits(i), test_symbols_out(i) )
+        peek(c.io.error)
+
+        // Check that the symbols were decoded correctly
+        if(t != 0)
+        {
+            expect(c.io.decodedData.valid, 1)
+            for(i <- 0 until params.max_ntx_nrx) {
+                expect( c.io.decodedData.bits(i), test_symbols_out(i) )
+            }
+        }
     }
 }
 
