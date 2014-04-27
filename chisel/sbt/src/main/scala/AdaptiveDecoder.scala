@@ -25,6 +25,7 @@ class AdaptiveDecoderIO(implicit params: LMSParams) extends Bundle()
     val decodedData = Decoupled( Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)} )
 
     val toMatEngine = new MatrixEngineIO().flip()
+    val reqMatEngine = Bool().asOutput
 
     // When this goes high, a new W matrix will be loaded into the decoder
     val resetW = Bool().asInput
@@ -34,6 +35,8 @@ class AdaptiveDecoderIO(implicit params: LMSParams) extends Bundle()
     val processSamples = Bool().asInput
 
     val error = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}
+
+    override def clone: this.type = { new AdaptiveDecoderIO().asInstanceOf[this.type]; }
 }
 
 
@@ -87,6 +90,7 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
     // Compute Wx
     io.toMatEngine.matrixIn := w
     io.toMatEngine.vectorIn := samples_fp
+    io.reqMatEngine := processSamples
     val Wx = io.toMatEngine.result
 
     // The Matrix Engine has 1 cycle delay. Therefore, we need to delay all other signals by 1 cycle too (blergh!)

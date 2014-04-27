@@ -12,21 +12,29 @@ object Work {
 
     // Parse parameters: figure out which module to test
     val test_module = """-testmodule_(.*)""".r.findFirstMatchIn(args(1))
-    require(test_module.isDefined, "Second argument must be -testmodule_ModuleName")
 
-    // Test the appropriate module
-    test_module.get.group(1) match {
-        case "ChannelEstimatorEngine" => 
-            chiselMainTest( args.slice(2, args.length), () => Module(new ChannelEstimatorEngine()(params)) ) {
-                c => new ChannelEstimatorEngineTests(c, params) }
+    // If no module defined, it means we don't want to perform a test. Just generate Verilog
+    if(!test_module.isDefined)
+        chiselMain( args.slice(1, args.length), () => Module(new LMSDecoder(params)) ) 
 
-        case "MatrixEngine" =>
-            chiselMainTest( args.slice(2, args.length), () => Module(new MatrixEngine()(params)) ) {
-                c => new MatrixEngineTests(c, params) }
- 
-        case "AdaptiveDecoder" =>
-            chiselMainTest( args.slice(2, args.length), () => Module(new AdaptiveDecoderWithMatrixEng()(params)) ) {
-                c => new AdaptiveDecoderTests(c, params) }
+    // Else perform tests
+    else
+    {
+        // Test the appropriate module
+        test_module.get.group(1) match {
+            case "ChannelEstimatorEngine" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new ChannelEstimatorEngine()(params)) ) {
+                    c => new ChannelEstimatorEngineTests(c, params) }
+
+            case "MatrixEngine" =>
+                chiselMainTest( args.slice(2, args.length), () => Module(new MatrixEngine()(params)) ) {
+                    c => new MatrixEngineTests(c, params) }
+     
+            case "AdaptiveDecoder" =>
+                chiselMainTest( args.slice(2, args.length), () => Module(new AdaptiveDecoderWithMatrixEng()(params)) ) {
+                    c => new AdaptiveDecoderTests(c, params) }
+    
+        }
     }
   }
 }   
