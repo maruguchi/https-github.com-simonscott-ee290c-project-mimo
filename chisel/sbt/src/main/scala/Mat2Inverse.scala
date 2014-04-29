@@ -21,11 +21,14 @@ class Mat2Inverse (implicit params:LMSParams) extends Module
 {
 	val io = new Mat2InverseIO()
 
+	// determinant
 	val det = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)
 	det := complex_sub(complex_mult(io.matIn(0)(0), io.matIn(1)(1)), complex_mult(io.matIn(0)(1), io.matIn(1)(0)))
 
+	// value of zero for negation
 	val zero = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
 
+	// compute inverse
 	val result = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
 	result(0)(0) := complex_div(io.matIn(1)(1), det)
 	result(1)(1) := complex_div(io.matIn(0)(0), det)

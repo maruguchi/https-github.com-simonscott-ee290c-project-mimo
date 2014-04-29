@@ -75,10 +75,10 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
         for(i <- 0 until params.max_ntx_nrx) {
 		poke(c.io.dataIn.valid, 1)
             for(j <- 0 until params.max_ntx_nrx) {
-                poke(c.io.dataIn.bits(j).real, conv_double_to_samp(dataIn_r(i)(j), params.samp_int_bits, params.samp_wd))
-                poke(c.io.dataIn.bits(j).imag, conv_double_to_samp(dataIn_i(i)(j), params.samp_int_bits, params.samp_wd))
-            	poke(c.io.trainSequence(j).real, conv_double_to_samp(trainSeq_r(i)(j), params.samp_int_bits, params.samp_wd))
-            	poke(c.io.trainSequence(j).imag, conv_double_to_samp(trainSeq_i(i)(j), params.samp_int_bits, params.samp_wd))
+                poke(c.io.dataIn.bits(j).real, conv_double_to_samp(dataIn_r(i)(j), params.samp_exp, params.samp_wd))
+                poke(c.io.dataIn.bits(j).imag, conv_double_to_samp(dataIn_i(i)(j), params.samp_exp, params.samp_wd))
+            	poke(c.io.trainSequence(j).real, conv_double_to_samp(trainSeq_r(i)(j), params.samp_exp, params.samp_wd))
+            	poke(c.io.trainSequence(j).imag, conv_double_to_samp(trainSeq_i(i)(j), params.samp_exp, params.samp_wd))
             }
 	step(1)
 	peek(c.io.trainAddress)

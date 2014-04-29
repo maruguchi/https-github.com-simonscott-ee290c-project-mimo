@@ -18,13 +18,19 @@ case class LMSParams()
     val max_train_len = 4
     val fifo_len = 16
     val num_registers = 6
-    val mu = 0.01
+    val mu = 0.1
 
     // Bit widths
-    val addr_wd = log2Up( max(num_registers, 6) )
+    val reg_addr_wd = log2Up(num_registers)
+    val train_addr_wd = log2Up(max_train_len)
+    val addr_wd = max(reg_addr_wd, train_addr_wd)
+
     val samp_wd = 10
-    val samp_int_bits = 4   // top 4 bits of sample is integer part, giving max value of +/- 8.0
+    val samp_exp = 4        // top 4 bits of sample is integer part, giving max value of +/- 8.0
+    val samp_frac_bits = samp_wd - samp_exp   
+
     val symbol_wd = log2Up(4)
+
     val fix_pt_wd = 20
     val fix_pt_exp = 8      // 8 bits int, 12 bits of decimal = 0.0002 resolution
     val fix_pt_frac_bits = fix_pt_wd - fix_pt_exp

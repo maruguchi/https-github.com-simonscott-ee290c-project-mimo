@@ -64,21 +64,22 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
 	input_counter := input_counter + UInt(1)
     }
 
+    // Bit shift inputs to fix_pt widths and exponents
     for(i <- 0 until params.max_ntx_nrx)
     {
 	when (process_inputs) {
-        	dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
-        	dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
-		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
-        	trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_int_bits)
+        	dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
+        	dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
+		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
+        	trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
 	}
     }
 
+    // start output processing once all the inputs are received
     val process_outputs = (input_counter === UInt(params.max_ntx_nrx))
     val output_counter = Reg(init = UInt(0,3))
 
     val done = process_outputs && (output_counter === UInt(params.max_ntx_nrx + 1))
-
 
     // always sends dataIn as matrix to engine
     io.toMatEngine.matrixIn := dataMatrix
@@ -88,6 +89,7 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     val register2 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
     val register3 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
 
+    // send and receive appropriate column to matrix engine
     when (process_outputs && ~done) {
 	    output_counter := output_counter + UInt(1)
 	    when (output_counter === UInt(0)) {
@@ -115,10 +117,5 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     io.channelOut(3) := register3
     io.done := done
 
-    // sends each column of trainSequence to engine and fills channel estimate with each corresponding received column
-//    for (i <-0 until params.max_ntx_nrx) {
-//	io.vecToEngine(i) := io.trainSequence(i)(counter)
-//	io.channelOut(i)(counter) := io.vecFromEngine(i)
-//    }
 }
 

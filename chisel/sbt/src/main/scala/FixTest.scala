@@ -10,7 +10,7 @@ import FixedPoint._
 
 class FixTestIO(implicit params: LMSParams) extends Bundle()
 {
-	val in = new ComplexSFix(w=params.samp_wd, e=params.samp_int_bits).asInput
+	val in = new ComplexSFix(w=params.samp_wd, e=params.samp_exp).asInput
 	val out = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput
 
 }
@@ -25,7 +25,7 @@ class FixTest (implicit params:LMSParams) extends Module
 
 class FixTestTests(c: FixTest, params: LMSParams) extends Tester(c)
 {
-val in_r = conv_double_to_samp(4, params.samp_int_bits, params.samp_wd)
+val in_r = conv_double_to_samp(4, params.samp_exp, params.samp_wd)
 val in_i = 0
 val result_r = 1
 val result_i = 0
