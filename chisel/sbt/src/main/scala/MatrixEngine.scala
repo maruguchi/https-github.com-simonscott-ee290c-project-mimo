@@ -12,6 +12,16 @@ import FixedPoint._
 // Helper Functions. These functions generate new hardware every time that they are called.
 object ComplexMathFunctions
 {
+    // Function to compute a complex conjugate
+    def conj(x: ComplexSFix)(implicit params: LMSParams): ComplexSFix =
+    {
+        val z = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
+
+        z.real := x.real
+        z.imag := -x.imag
+        return z
+    }
+
     // Function to perform a complex multiply
     def complex_mult(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix =
     {
@@ -20,6 +30,22 @@ object ComplexMathFunctions
         z.real := (x.real * y.real) - (x.imag * y.imag)
         z.imag := x.real * y.imag + x.imag * y.real
         return z
+    }
+
+    // Function to perform a complex division
+    def complex_div(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix = 
+    {
+	val z = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
+	val prod = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
+
+	prod := complex_mult(x, conj(y))
+
+	val den_mag = SFix(exp = params.fix_pt_exp, width = params.fix_pt_wd)
+	den_mag := y.real * y.real + y.imag * y.imag
+
+	z.real.raw := (prod.real.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
+	z.imag.raw := (prod.imag.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
+	return z
     }
 
     // Function to add two complex numbers
@@ -71,6 +97,22 @@ object ComplexMathFunctions
         var fp = (d * pow(2, fp_frac_bits)).toInt
         fp = if(fp < 0) ( pow(2, fp_bit_wd).toInt + fp ) else fp
         return fp
+    }
+
+    // Function to convert fixed point numbers to doubles
+    def conv_fp_to_double(fp: BigInt, fp_frac_bits: Int, fp_bit_wd: Int): Double = 
+    {
+        var d = if(fp > pow(2, fp_bit_wd-1).toInt) (fp.toDouble - pow(2, fp_bit_wd)) else fp.toDouble
+        d = d * pow(2, -fp_frac_bits)
+        return d
+    }
+
+    // Function to convert double numbers to integer samples
+    def conv_double_to_samp(d: Double, samp_int_bits: Int, samp_bit_wd: Int): Int = 
+    {
+        var samp = (d * pow(2, samp_bit_wd - samp_int_bits)).toInt
+        samp = if(samp < 0) ( pow(2, samp_bit_wd).toInt + samp ) else samp
+        return samp
     }
 }
 
