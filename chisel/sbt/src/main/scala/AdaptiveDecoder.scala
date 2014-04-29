@@ -61,6 +61,8 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
     val processSamples = (io.processSamples & io.samples.valid & (~io.resetW) & io.decodedData.ready)
     val processSamples_s2 = Reg(init = Bool(false), next = processSamples)
 
+    io.samples.ready := (io.processSamples & (~io.resetW) & io.decodedData.ready)
+
     val nextW = Vec.fill(params.max_ntx_nrx){ Vec.fill(params.max_ntx_nrx){
                 new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
 
@@ -133,7 +135,7 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
     }
 
     io.decodedData.valid := processSamples_s2
-
+ 
 
     // ****** Hardware to adapt the W matrix ******
 

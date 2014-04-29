@@ -23,6 +23,12 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
     override def clone: this.type = { new LMSDecoderIO().asInstanceOf[this.type]; }
 }
 
+class VecBundle(implicit params: LMSParams) extends Bundle()
+{
+    val v = Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}
+    override def clone: this.type = { new VecBundle().asInstanceOf[this.type]; }
+}
+
 
 // The main LMS Decoder module definition
 class LMSDecoder(paramsIn: LMSParams) extends Module
@@ -45,6 +51,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val rx_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, entries = params.fifo_len))
     val decoded_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}, entries = params.fifo_len))
     //io.data_d2h <> Queue(adaptiveDecoder.io.decodedData, entries = params.fifo_len)
+    //val decoded_data_queue = Module(new Queue(new VecBundle, entries = params.fifo_len))
 
     // Wire up the write interface to the registers
     when(config_reg_we) {
@@ -95,7 +102,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val channelEstimator = Module(new ChannelEstimator)
 
     // Create the module to compute the initial weights
-    val initializeWeights = Module(new InitializeWeights)
+    // val initializeWeights = Module(new InitializeWeights)
 
     // Create the actual adaptive decoder
     val adaptiveDecoder = Module(new AdaptiveDecoder)
@@ -115,15 +122,6 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     // Adaptive decoder
     //adaptiveDecoder.io.wSeed <>
     adaptiveDecoder.io.samples <> rx_data_queue.io.deq
-
-/*
-    adaptiveDecoder.io.decodedData.ready := decoded_data_queue.io.enq.ready
-    decoded_data_queue.io.enq.valid := adaptiveDecoder.io.decodedData.valid
-    for(i <- 0 until params.max_ntx_nrx) {
-        decoded_data_queue.io.enq.bits(i) := adaptiveDecoder.io.decodedData.bits(i)
-    }
-*/
-
     adaptiveDecoder.io.decodedData <> decoded_data_queue.io.enq
     adaptiveDecoder.io.resetW := adaptiveDecoder_resetW
     adaptiveDecoder.io.processSamples := adaptiveDecoder_en

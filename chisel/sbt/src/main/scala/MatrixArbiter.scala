@@ -35,14 +35,22 @@ class MatrixArbiter(implicit params: LMSParams) extends Module
     // 3.) AdaptiveDecoder
     
     when(io.reqChannelEstimator) {
-        io.toMatrixEngine := io.toChannelEstimator
+        io.toMatrixEngine.matrixIn := io.toChannelEstimator.matrixIn
+        io.toMatrixEngine.vectorIn := io.toChannelEstimator.vectorIn
+
     }
     .elsewhen(io.reqInitializeWeights) {
-        io.toMatrixEngine := io.toInitializeWeights
+        io.toMatrixEngine.matrixIn := io.toInitializeWeights.matrixIn
+        io.toMatrixEngine.vectorIn := io.toInitializeWeights.vectorIn
     }
     .otherwise {
-        io.toMatrixEngine := io.toAdaptiveDecoder
+        io.toMatrixEngine.matrixIn := io.toAdaptiveDecoder.matrixIn
+        io.toMatrixEngine.vectorIn := io.toAdaptiveDecoder.vectorIn
     }
+
+    io.toChannelEstimator.result := io.toMatrixEngine.result
+    io.toInitializeWeights.result := io.toMatrixEngine.result
+    io.toAdaptiveDecoder.result := io.toMatrixEngine.result
 }
 
 

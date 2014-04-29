@@ -53,6 +53,7 @@ object ComplexMathFunctions
             mult_out(i) := complex_mult( vecA(i), vecB(i) )
 
         result := mult_out.reduceLeft(complex_add)
+
         return result
     }
 
