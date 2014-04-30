@@ -102,9 +102,11 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     // ***** Create the control logic to enable/disable the modules *****
 
     // Lots of TODO
-    val adaptiveDecoder_en = Bool(true)
+    val cnt = Reg(UInt(width=4))
+    cnt := cnt + UInt(1)
+    val adaptiveDecoder_en = cnt(0)
     val adaptiveDecoder_resetW = Bool(false)
-    val channelEstimator_en = Bool(true)
+    val channelEstimator_en = cnt(1)
     val channelEstimator_reset = Bool(false)
     val channelEstimator_done = Bool()
     
@@ -113,17 +115,6 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Matrix engine
     matrixEngine.io <> matrixArbiter.io.toMatrixEngine
-
-    // Adaptive decoder
-    //adaptiveDecoder.io.wSeed <>
-    adaptiveDecoder.io.wSeed            <> channelEstimator.io.channelOut  // This line is wrong! Remove it! Just here for testing!
-    adaptiveDecoder.io.samples.bits     := rx_data_queue.io.deq.bits
-    adaptiveDecoder.io.samples.valid    := rx_data_queue.io.deq.valid
-    adaptiveDecoder.io.decodedData      <> decoded_data_queue.io.enq
-    adaptiveDecoder.io.resetW           := adaptiveDecoder_resetW
-    adaptiveDecoder.io.processSamples   := adaptiveDecoder_en
-    matrixArbiter.io.reqAdaptiveDecoder := adaptiveDecoder.io.reqMatEngine
-    matrixArbiter.io.toAdaptiveDecoder  <> adaptiveDecoder.io.toMatEngine  
 
     // Channel estimator
 	channelEstimator.io.start           := channelEstimator_en
@@ -138,8 +129,21 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
                                     (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
 
+    // Adaptive decoder
+    //adaptiveDecoder.io.wSeed <>
+    adaptiveDecoder.io.wSeed            <> channelEstimator.io.channelOut  // This line is wrong! Remove it! Just here for testing!
+    adaptiveDecoder.io.samples.bits     := rx_data_queue.io.deq.bits
+    adaptiveDecoder.io.samples.valid    := rx_data_queue.io.deq.valid
+    adaptiveDecoder.io.decodedData      <> decoded_data_queue.io.enq
+    adaptiveDecoder.io.resetW           := adaptiveDecoder_resetW
+    adaptiveDecoder.io.processSamples   := adaptiveDecoder_en
+    matrixArbiter.io.reqAdaptiveDecoder := adaptiveDecoder.io.reqMatEngine
+    matrixArbiter.io.toAdaptiveDecoder  <> adaptiveDecoder.io.toMatEngine  
+
     // Initialize weights
     // 	? := channelEstimator.io.channelOut
+    matrixArbiter.io.reqInitializeWeights := Bool(false)
+    
     // TODO
 
 }

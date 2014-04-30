@@ -23,7 +23,7 @@ case class LMSParams()
     // Bit widths
     val reg_addr_wd = log2Up(num_registers)
     val train_addr_wd = log2Up(max_train_len)
-    val addr_wd = max(reg_addr_wd, train_addr_wd)
+    val addr_wd = max(reg_addr_wd, train_addr_wd) + 2
 
     val samp_wd = 10
     val samp_exp = 4        // top 4 bits of sample is integer part, giving max value of +/- 8.0

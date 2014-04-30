@@ -26,13 +26,13 @@ class ChannelEstimatorIO(implicit params: LMSParams) extends Bundle()
 	val done = Bool().asOutput
 
 	// sequence of training symbols
-	val trainSequence = Vec.fill(params.max_train_len){new ComplexSInt(w = params.samp_wd).asInput}
+	val trainSequence = Vec.fill(params.max_train_len){new ComplexSFix(w=params.samp_wd, e=params.samp_exp).asInput}
 
 	// address to training symbol memory
 	val trainAddress = UInt(width=2).asOutput
 
 	// stream of input data
-	val dataIn = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSInt(w = params.samp_wd)} ).flip()
+	val dataIn = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)} ).flip()
 
 	// output with channel estimate matrix
 	val channelOut = Vec.fill(params.max_ntx){
@@ -65,15 +65,17 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     when (io.rst) {
 	input_counter := UInt(0)
     }
+    io.dataIn.ready := ~process_inputs
 
     // Bit shift inputs to fix_pt widths and exponents
     for(i <- 0 until params.max_ntx_nrx)
     {
 	when (process_inputs) {
-        	dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
-        	dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
-		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
-        	trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag << UInt(params.fix_pt_frac_bits - params.samp_wd + params.samp_exp)
+
+        dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+        dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+        trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
 	}
     }
 
