@@ -19,6 +19,9 @@ class ChannelEstimatorIO(implicit params: LMSParams) extends Bundle()
 	// input flag; will start processing when start goes high
 	val start = Bool().asInput
 
+	// resets estimator into initial state to receive new matrix
+	val rst = Bool().asInput
+
 	// output flag; goes high when done processing
 	val done = Bool().asOutput
 
@@ -57,11 +60,14 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     val input_counter = Reg(init = UInt(0,3))
     val process_inputs = io.start && io.dataIn.valid && (input_counter < UInt(params.max_ntx_nrx))
     
-    io.trainAddress := input_counter
+    io.trainAddress := input_counter + UInt(1)
     io.probe := trainMatrix
 
     when (process_inputs) {
 	input_counter := input_counter + UInt(1)
+    }
+    when (io.rst) {
+	input_counter := UInt(0)
     }
 
     // Bit shift inputs to fix_pt widths and exponents
@@ -78,6 +84,10 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     // start output processing once all the inputs are received
     val process_outputs = (input_counter === UInt(params.max_ntx_nrx))
     val output_counter = Reg(init = UInt(0,3))
+
+    when (io.rst) {
+	output_counter := UInt(0)
+    }
 
     val done = process_outputs && (output_counter === UInt(params.max_ntx_nrx + 1))
 

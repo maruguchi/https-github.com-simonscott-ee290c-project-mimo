@@ -38,10 +38,6 @@ object Work {
 		    chiselMainTest( args.slice(2, args.length), () => Module(new FixDivision()(params)) ) {
 		        c => new FixDivisionTests(c, params) }
 
-		case "FixTest" => 
-		    chiselMainTest( args.slice(2, args.length), () => Module(new FixTest()(params)) ) {
-		        c => new FixTestTests(c, params) }
-
 		case "Mat2Inverse" => 
 		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat2Inverse()(params)) ) {
 		        c => new Mat2InverseTests(c, params) }
