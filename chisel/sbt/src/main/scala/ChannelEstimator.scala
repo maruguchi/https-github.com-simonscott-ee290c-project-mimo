@@ -40,9 +40,6 @@ class ChannelEstimatorIO(implicit params: LMSParams) extends Bundle()
 
 	// interface to the matrix engine
 	val toMatEngine = new MatrixEngineIO().flip()
-
-    	val probe = Vec.fill(params.max_train_len){ 
-		Vec.fill(params.max_ntx_nrx){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
 }
 
 
@@ -61,7 +58,6 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     val process_inputs = io.start && io.dataIn.valid && (input_counter < UInt(params.max_ntx_nrx))
     
     io.trainAddress := input_counter + UInt(1)
-    io.probe := trainMatrix
 
     when (process_inputs) {
 	input_counter := input_counter + UInt(1)

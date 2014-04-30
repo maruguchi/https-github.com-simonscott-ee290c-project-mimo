@@ -33,9 +33,6 @@ class ChannelEstimatorEngineIO(implicit params: LMSParams) extends Bundle()
 	// output with channel estimate matrix
 	val channelOut = Vec.fill(params.max_ntx_nrx){
                     Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}}
-
-    	val probe = Vec.fill(params.max_train_len){ 
-		Vec.fill(params.max_ntx_nrx){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
 }
 
 
@@ -54,7 +51,6 @@ class ChannelEstimatorEngine(implicit params: LMSParams) extends Module
     io.channelOut := estimator.io.channelOut
     io.done := estimator.io.done
     io.trainAddress := estimator.io.trainAddress
-    io.probe := estimator.io.probe
 
     engine.io <> estimator.io.toMatEngine  
 
