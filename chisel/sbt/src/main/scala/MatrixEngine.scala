@@ -83,6 +83,60 @@ object ComplexMathFunctions
         return result
     }
 
+    // Function to negate 2x2 matrices
+    def mat2negate(A: Vec[Vec[ComplexSFix]])(implicit params: LMSParams): Vec[Vec[ComplexSFix]] =
+    {
+        val matOut = Vec.fill(2){Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	val zero = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
+
+	matOut(0)(0) := complex_sub( zero, A(0)(0) )
+	matOut(1)(0) := complex_sub( zero, A(1)(0) )
+	matOut(0)(1) := complex_sub( zero, A(0)(1) )
+	matOut(1)(1) := complex_sub( zero, A(1)(1) )
+
+        return matOut
+    }
+
+    // Function to compute the sum of 2x2 matrices
+    def mat2add(A: Vec[Vec[ComplexSFix]], B: Vec[Vec[ComplexSFix]])(implicit params: LMSParams): Vec[Vec[ComplexSFix]] =
+    {
+        val matOut = Vec.fill(2){Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	matOut(0)(0) := complex_add( A(0)(0), B(0)(0) )
+	matOut(1)(0) := complex_add( A(1)(0), B(1)(0) )
+	matOut(0)(1) := complex_add( A(0)(1), B(0)(1) )
+	matOut(1)(1) := complex_add( A(1)(1), B(1)(1) )
+
+        return matOut
+    }
+
+    // Function to compute the difference of 2x2 matrices
+    def mat2subtract(A: Vec[Vec[ComplexSFix]], B: Vec[Vec[ComplexSFix]])(implicit params: LMSParams): Vec[Vec[ComplexSFix]] =
+    {
+        val matOut = Vec.fill(2){Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	matOut(0)(0) := complex_sub( A(0)(0), B(0)(0) )
+	matOut(1)(0) := complex_sub( A(1)(0), B(1)(0) )
+	matOut(0)(1) := complex_sub( A(0)(1), B(0)(1) )
+	matOut(1)(1) := complex_sub( A(1)(1), B(1)(1) )
+
+        return matOut
+    }
+
+    // Function to compute a product of 2x2 matrices
+    def mat2multiply(A: Vec[Vec[ComplexSFix]], B: Vec[Vec[ComplexSFix]])(implicit params: LMSParams): Vec[Vec[ComplexSFix]] =
+    {
+        val matOut = Vec.fill(2){Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	matOut(0)(0) := complex_add( complex_mult( A(0)(0), B(0)(0) ), complex_mult( A(1)(0), B(0)(1) ) )
+	matOut(1)(0) := complex_add( complex_mult( A(0)(0), B(1)(0) ), complex_mult( A(1)(0), B(1)(1) ) )
+	matOut(0)(1) := complex_add( complex_mult( A(0)(1), B(0)(0) ), complex_mult( A(1)(1), B(0)(1) ) )
+	matOut(1)(1) := complex_add( complex_mult( A(0)(1), B(1)(0) ), complex_mult( A(1)(1), B(1)(1) ) )
+
+        return matOut
+    }
+
     // Function to create a new complex signed fix-pt value and initialize it
     def makeComplexSFix(w: Int, r: Int, i: Int)(implicit params: LMSParams): ComplexSFix =
     {

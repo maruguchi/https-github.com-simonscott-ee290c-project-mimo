@@ -13,8 +13,6 @@ class Mat2InverseIO(implicit params: LMSParams) extends Bundle()
 	val matIn = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput } }
 
 	val matOut = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
-
-	val det = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput
 }
 
 class Mat2Inverse (implicit params:LMSParams) extends Module
@@ -32,12 +30,10 @@ class Mat2Inverse (implicit params:LMSParams) extends Module
 	val result = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
 	result(0)(0) := complex_div(io.matIn(1)(1), det)
 	result(1)(1) := complex_div(io.matIn(0)(0), det)
-	result(0)(1) := complex_div(complex_sub(zero, io.matIn(1)(0)), det)
-	result(1)(0) := complex_div(complex_sub(zero, io.matIn(0)(1)), det)
+	result(0)(1) := complex_div(complex_sub(zero, io.matIn(0)(1)), det)
+	result(1)(0) := complex_div(complex_sub(zero, io.matIn(1)(0)), det)
 
 	io.matOut := result
-	io.det := det
-
 }
 
 class Mat2InverseTests(c: Mat2Inverse, params: LMSParams) extends Tester(c)
@@ -65,12 +61,6 @@ for (t <- 0 until 1)
 			print( conv_fp_to_double(peek(c.io.matOut(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
 		}
 	}
-	print( conv_fp_to_double(peek(c.io.det.real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-	print( conv_fp_to_double(peek(c.io.det.imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
 
-//	print( conv_fp_to_double(yr, params.fix_pt_frac_bits, params.fix_pt_wd) )
-//	println()
-//	print( conv_fp_to_double(yi, params.fix_pt_frac_bits, params.fix_pt_wd) )
-//	println()
     }
 }
