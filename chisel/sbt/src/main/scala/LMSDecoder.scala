@@ -23,12 +23,6 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
     override def clone: this.type = { new LMSDecoderIO().asInstanceOf[this.type]; }
 }
 
-class VecBundle(implicit params: LMSParams) extends Bundle()
-{
-    val v = Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}
-    override def clone: this.type = { new VecBundle().asInstanceOf[this.type]; }
-}
-
 
 // The main LMS Decoder module definition
 class LMSDecoder(paramsIn: LMSParams) extends Module
@@ -50,8 +44,6 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val train_mem = Mem(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, params.max_train_len)
     val rx_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, entries = params.fifo_len))
     val decoded_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}, entries = params.fifo_len))
-    //io.data_d2h <> Queue(adaptiveDecoder.io.decodedData, entries = params.fifo_len)
-    //val decoded_data_queue = Module(new Queue(new VecBundle, entries = params.fifo_len))
 
     // Wire up the write interface to the registers
     when(config_reg_we) {
@@ -79,7 +71,6 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     when(train_mem_we) {
         train_mem( mem_address(params.train_addr_wd,0) ) := io.data_h2d.bits
     }
-    // TODO: add the read interface
 
     // Wire up the RX data queue
     rx_data_queue.io.enq.bits := io.data_h2d.bits
@@ -113,6 +104,10 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     // Lots of TODO
     val adaptiveDecoder_en = Bool(true)
     val adaptiveDecoder_resetW = Bool(false)
+    val channelEstimator_en = Bool(true)
+    val channelEstimator_reset = Bool(false)
+    val channelEstimator_done = Bool()
+    
 
     // ***** Wire up all the modules *****
 
@@ -121,17 +116,30 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Adaptive decoder
     //adaptiveDecoder.io.wSeed <>
-    adaptiveDecoder.io.samples <> rx_data_queue.io.deq
-    adaptiveDecoder.io.decodedData <> decoded_data_queue.io.enq
-    adaptiveDecoder.io.resetW := adaptiveDecoder_resetW
-    adaptiveDecoder.io.processSamples := adaptiveDecoder_en
+    adaptiveDecoder.io.wSeed            <> channelEstimator.io.channelOut  // This line is wrong! Remove it! Just here for testing!
+    adaptiveDecoder.io.samples.bits     := rx_data_queue.io.deq.bits
+    adaptiveDecoder.io.samples.valid    := rx_data_queue.io.deq.valid
+    adaptiveDecoder.io.decodedData      <> decoded_data_queue.io.enq
+    adaptiveDecoder.io.resetW           := adaptiveDecoder_resetW
+    adaptiveDecoder.io.processSamples   := adaptiveDecoder_en
     matrixArbiter.io.reqAdaptiveDecoder := adaptiveDecoder.io.reqMatEngine
-    matrixArbiter.io.toAdaptiveDecoder <> adaptiveDecoder.io.toMatEngine  
+    matrixArbiter.io.toAdaptiveDecoder  <> adaptiveDecoder.io.toMatEngine  
 
     // Channel estimator
-    // TODO
+	channelEstimator.io.start           := channelEstimator_en
+	channelEstimator.io.rst             := channelEstimator_reset
+	channelEstimator_done               := channelEstimator.io.done
+	channelEstimator.io.trainSequence   := train_mem( channelEstimator.io.trainAddress )
+	channelEstimator.io.dataIn.bits     := rx_data_queue.io.deq.bits
+	channelEstimator.io.dataIn.valid    := rx_data_queue.io.deq.valid
+    matrixArbiter.io.reqChannelEstimator := channelEstimator_en & (~channelEstimator_done)
+	matrixArbiter.io.toChannelEstimator <> channelEstimator.io.toMatEngine
+
+    rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
+                                    (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
 
     // Initialize weights
+    // 	? := channelEstimator.io.channelOut
     // TODO
 
 }
