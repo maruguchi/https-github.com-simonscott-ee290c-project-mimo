@@ -41,6 +41,14 @@ object Work {
 		case "Mat2Inverse" => 
 		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat2Inverse()(params)) ) {
 		        c => new Mat2InverseTests(c, params) }
+
+		case "Mat3Inverse" => 
+		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat3Inverse()(params)) ) {
+		        c => new Mat3InverseTests(c, params) }
+
+		case "Mat4Inverse" => 
+		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
+		        c => new Mat4InverseTests(c, params) }
     
         }
     }
