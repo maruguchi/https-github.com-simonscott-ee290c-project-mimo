@@ -22,7 +22,7 @@ debug:
 	cd sbt; sbt "run -params_$(K)_$(L)_$(R) --test --genHarness --compile --debug --vcd --targetDir ../test/generated-src"
 
 clean:
-	rm -rf sbt/target sbt/project vlsi/generated-src/* test/generated-src/*
+	rm -rf sbt/target sbt/project/target vlsi/generated-src/* test/generated-src/*
 
 .PHONY: vlsi test
 

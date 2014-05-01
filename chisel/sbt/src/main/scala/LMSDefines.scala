@@ -74,16 +74,3 @@ object LMSConstants
     val REG_WD = 4
 }
 
-
-// Configuration registers
-// Constants
-object ConfigRegisters
-{
-    val ntx = Reg(init = UInt(0, width = REG_WD))
-    val nrx = Reg(init = UInt(0, width = REG_WD))
-    val train_len = Reg(init = UInt(0, width = REG_WD))
-    val modulation = Reg(init = UInt(0, width = REG_WD))
-    val snr = Reg(init = UInt(0, width = REG_WD))
-    val start = Reg(init = Bool(false))
-}
-

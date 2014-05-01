@@ -35,45 +35,54 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     // ***** Create and wire up the memories *****
 
     // Create the write enable logic
-    val mem_address = io.addr(params.addr_wd-3, 0)
+    val config_mem_address = io.addr(params.reg_addr_wd-1, 0)
+    val train_mem_address = io.addr(params.train_addr_wd-1, 0)
     val config_reg_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(0) ) & io.data_h2d.valid
     val train_mem_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(1) ) & io.data_h2d.valid
     val rx_data_queue_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(2) ) & io.data_h2d.valid
 
-    // Create the queues, registers and memory storage
-    val train_mem = Mem(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, params.max_train_len)
+    // Create the queues and memory storage
+    val train_mem = Mem(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, params.max_train_len, seqRead = false)
     val rx_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}, entries = params.fifo_len))
     val decoded_data_queue = Module(new Queue(Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}, entries = params.fifo_len))
 
+    // Create the configuration registers
+    val ntx = Reg(init = UInt(0, width = REG_WD))
+    val nrx = Reg(init = UInt(0, width = REG_WD))
+    val train_len = Reg(init = UInt(0, width = REG_WD))
+    val modulation = Reg(init = UInt(0, width = REG_WD))
+    val snr = Reg(init = UInt(0, width = REG_WD))
+    val start = Reg(init = Bool(false))
+
     // Wire up the write interface to the registers
     when(config_reg_we) {
-        when(mem_address === UInt(0)) {
-            ConfigRegisters.ntx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+        when(config_mem_address === UInt(0)) {
+            ntx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(1)) {
-            ConfigRegisters.nrx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+        when(config_mem_address === UInt(1)) {
+            nrx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(2)) {
-            ConfigRegisters.train_len := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+        when(config_mem_address === UInt(2)) {
+            train_len := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(3)) {
-            ConfigRegisters.modulation := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+        when(config_mem_address === UInt(3)) {
+            modulation := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(4)) {
-            ConfigRegisters.snr := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+        when(config_mem_address === UInt(4)) {
+            snr := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(5)) {
-            ConfigRegisters.start := io.data_h2d.bits(0).real.raw(0)
+        when(config_mem_address === UInt(5)) {
+            start := io.data_h2d.bits(0).real.raw(0)
         }
     }
 
     // Wire up the training sequence memory
     when(train_mem_we) {
-        train_mem( mem_address(params.train_addr_wd,0) ) := io.data_h2d.bits
+        train_mem( train_mem_address ) := io.data_h2d.bits
     }
 
     // Wire up the RX data queue
-    rx_data_queue.io.enq.bits := io.data_h2d.bits
+    rx_data_queue.io.enq.bits <> io.data_h2d.bits
     rx_data_queue.io.enq.valid := rx_data_queue_we
     io.data_h2d.ready := rx_data_queue.io.enq.ready
 
@@ -103,12 +112,13 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Lots of TODO
     val cnt = Reg(UInt(width=4))
-    cnt := cnt + UInt(1)
-    val adaptiveDecoder_en = cnt(0)
-    val adaptiveDecoder_resetW = Bool(false)
-    val channelEstimator_en = cnt(1)
-    val channelEstimator_reset = Bool(false)
+    cnt := Mux(start, cnt + UInt(1), cnt)
+
+    val channelEstimator_en = (cnt === UInt(1))
+    val channelEstimator_reset = (cnt === UInt(0))
     val channelEstimator_done = Bool()
+    val adaptiveDecoder_en = (cnt >= UInt(5))
+    val adaptiveDecoder_resetW = (cnt === UInt(5))
     
 
     // ***** Wire up all the modules *****

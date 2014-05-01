@@ -34,21 +34,25 @@ object Work {
                 chiselMainTest( args.slice(2, args.length), () => Module(new AdaptiveDecoderWithMatrixEng()(params)) ) {
                     c => new AdaptiveDecoderTests(c, params) }
 
-		case "FixDivision" => 
-		    chiselMainTest( args.slice(2, args.length), () => Module(new FixDivision()(params)) ) {
-		        c => new FixDivisionTests(c, params) }
+            case "MatrixArbiter" =>
+                chiselMainTest( args.slice(2, args.length), () => Module(new MatrixArbiter()(params)) ) {
+                    c => new MatrixArbiterTests(c, params) }
 
-		case "Mat2Inverse" => 
-		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat2Inverse()(params)) ) {
-		        c => new Mat2InverseTests(c, params) }
+            case "FixDivision" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new FixDivision()(params)) ) {
+                    c => new FixDivisionTests(c, params) }
 
-		case "Mat3Inverse" => 
-		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat3Inverse()(params)) ) {
-		        c => new Mat3InverseTests(c, params) }
+            case "Mat2Inverse" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new Mat2Inverse()(params)) ) {
+                    c => new Mat2InverseTests(c, params) }
 
-		case "Mat4Inverse" => 
-		    chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
-		        c => new Mat4InverseTests(c, params) }
+            case "Mat3Inverse" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new Mat3Inverse()(params)) ) {
+                    c => new Mat3InverseTests(c, params) }
+
+            case "Mat4Inverse" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
+                    c => new Mat4InverseTests(c, params) }
     
         }
     }
