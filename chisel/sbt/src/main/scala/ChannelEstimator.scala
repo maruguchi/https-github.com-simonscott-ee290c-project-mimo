@@ -55,9 +55,9 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
 	Vec.fill(params.max_ntx_nrx){ Reg(new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)) } }
 
     val input_counter = Reg(init = UInt(0,3))
-    val process_inputs = io.start && io.dataIn.valid && (input_counter < UInt(params.max_ntx_nrx))
+    val process_inputs = io.start && io.dataIn.valid && (input_counter < UInt(params.max_ntx_nrx)) && (~io.rst)
     
-    io.trainAddress := input_counter + UInt(1)
+    io.trainAddress := input_counter
 
     when (process_inputs) {
 	input_counter := input_counter + UInt(1)
@@ -65,7 +65,7 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     when (io.rst) {
 	input_counter := UInt(0)
     }
-    io.dataIn.ready := ~process_inputs
+    io.dataIn.ready := process_inputs
 
     // Bit shift inputs to fix_pt widths and exponents
     for(i <- 0 until params.max_ntx_nrx)
@@ -74,7 +74,7 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
 
         dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
         dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
-		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+	trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
         trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
 	}
     }
