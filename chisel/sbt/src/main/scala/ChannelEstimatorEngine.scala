@@ -22,13 +22,13 @@ class ChannelEstimatorEngineIO(implicit params: LMSParams) extends Bundle()
 	val done = Bool().asOutput
 
 	// sequence of training symbols
-	val trainSequence = Vec.fill(params.max_train_len){new ComplexSInt(w = params.samp_wd).asInput}
+	val trainSequence = Vec.fill(params.max_train_len){new ComplexSFix(w=params.samp_wd, e=params.samp_exp).asInput}
 
 	// address to training symbol memory
 	val trainAddress = UInt(width=2).asOutput
 
 	// stream of input data
-	val dataIn = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSInt(w = params.samp_wd)} ).flip()
+	val dataIn = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp).asInput} ).flip()
 
 	// output with channel estimate matrix
 	val channelOut = Vec.fill(params.max_ntx_nrx){
@@ -44,8 +44,7 @@ class ChannelEstimatorEngine(implicit params: LMSParams) extends Module
     val engine = Module(new MatrixEngine())
 
     estimator.io.trainSequence := io.trainSequence
-    estimator.io.dataIn.bits := io.dataIn.bits
-    estimator.io.dataIn.valid := io.dataIn.valid
+    estimator.io.dataIn <> io.dataIn
     estimator.io.start := io.start
     estimator.io.rst := io.rst
     io.channelOut := estimator.io.channelOut
@@ -75,10 +74,10 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
         for(i <- 0 until params.max_ntx_nrx) {
 		poke(c.io.dataIn.valid, 1)
             for(j <- 0 until params.max_ntx_nrx) {
-                poke(c.io.dataIn.bits(j).real, conv_double_to_samp(dataIn_r(i)(j), params.samp_exp, params.samp_wd))
-                poke(c.io.dataIn.bits(j).imag, conv_double_to_samp(dataIn_i(i)(j), params.samp_exp, params.samp_wd))
-            	poke(c.io.trainSequence(j).real, conv_double_to_samp(trainSeq_r(i)(j), params.samp_exp, params.samp_wd))
-            	poke(c.io.trainSequence(j).imag, conv_double_to_samp(trainSeq_i(i)(j), params.samp_exp, params.samp_wd))
+                poke(c.io.dataIn.bits(j).real.raw, conv_double_to_fp(dataIn_r(i)(j), params.samp_exp, params.samp_wd))
+                poke(c.io.dataIn.bits(j).imag.raw, conv_double_to_fp(dataIn_i(i)(j), params.samp_exp, params.samp_wd))
+            	poke(c.io.trainSequence(j).real.raw, conv_double_to_fp(trainSeq_r(i)(j), params.samp_exp, params.samp_wd))
+            	poke(c.io.trainSequence(j).imag.raw, conv_double_to_fp(trainSeq_i(i)(j), params.samp_exp, params.samp_wd))
             }
 	step(1)
 	peek(c.io.trainAddress)
@@ -107,44 +106,87 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
 //        }
 
 	peek(c.io.done)
-	for(i <- 0 until params.max_ntx_nrx) {
-            for(j <- 0 until params.max_ntx_nrx) {
-                peek(c.io.channelOut(i)(j).real.raw)
-                peek(c.io.channelOut(i)(j).imag.raw)
-            }
-        }
+//	for(i <- 0 until params.max_ntx_nrx) {
+//          for(j <- 0 until params.max_ntx_nrx) {
+//              peek(c.io.channelOut(i)(j).real.raw)
+//              peek(c.io.channelOut(i)(j).imag.raw)
+//          }
+//	}
 
 	poke(c.io.start, 0)
 	peek(c.io.done)
+	peek(c.io.dataIn.ready)
 	step(1)
 	poke(c.io.rst, 1)
 	peek(c.io.done)
+	peek(c.io.dataIn.ready)
 	step(1)
-	poke(c.io.rst, 0)
 	poke(c.io.start, 1)
 	peek(c.io.done)
-
-        for(i <- 0 until params.max_ntx_nrx) {
-		poke(c.io.dataIn.valid, 1)
-            for(j <- 0 until params.max_ntx_nrx) {
-                poke(c.io.dataIn.bits(j).real, conv_double_to_samp(dataIn_r(i)(j)+1, params.samp_exp, params.samp_wd))
-                poke(c.io.dataIn.bits(j).imag, conv_double_to_samp(dataIn_i(i)(j), params.samp_exp, params.samp_wd))
-            	poke(c.io.trainSequence(j).real, conv_double_to_samp(trainSeq_r(i)(j), params.samp_exp, params.samp_wd))
-            	poke(c.io.trainSequence(j).imag, conv_double_to_samp(trainSeq_i(i)(j), params.samp_exp, params.samp_wd))
-            }
+	peek(c.io.dataIn.ready)
 	step(1)
 	peek(c.io.trainAddress)
-	peek(c.io.done)
-        }
+	peek(c.io.dataIn.ready)
+	step(1)
+	poke(c.io.rst, 0)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
 
-	step(6)
+//	for(i <- 0 until params.max_ntx_nrx) {
+//		poke(c.io.dataIn.valid, 1)
+//		for(j <- 0 until params.max_ntx_nrx) {
+//			poke(c.io.dataIn.bits(j).real.raw, conv_double_to_fp(dataIn_r(i)(j)+1, params.samp_exp, params.samp_wd))
+//			poke(c.io.dataIn.bits(j).imag.raw, conv_double_to_fp(dataIn_i(i)(j), params.samp_exp, params.samp_wd))
+//			poke(c.io.trainSequence(j).real.raw, conv_double_to_fp(trainSeq_r(i)(j), params.samp_exp, params.samp_wd))
+//			poke(c.io.trainSequence(j).imag.raw, conv_double_to_fp(trainSeq_i(i)(j), params.samp_exp, params.samp_wd))
+//		}
+//	step(1)
+//	peek(c.io.trainAddress)
+//	peek(c.io.done)
+//	}
+
+//	step(6)
+//	peek(c.io.done)
+//	for(i <- 0 until params.max_ntx_nrx) {
+//		for(j <- 0 until params.max_ntx_nrx) {
+//			peek(c.io.channelOut(i)(j).real.raw)
+//			peek(c.io.channelOut(i)(j).imag.raw)
+//		}
+//	}
+
+	step(1)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.trainAddress)
+	peek(c.io.dataIn.ready)
+	step(1)
 	peek(c.io.done)
-	for(i <- 0 until params.max_ntx_nrx) {
-            for(j <- 0 until params.max_ntx_nrx) {
-                peek(c.io.channelOut(i)(j).real.raw)
-                peek(c.io.channelOut(i)(j).imag.raw)
-            }
-        }
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.done)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.done)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.done)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.done)
+	peek(c.io.dataIn.ready)
+	step(1)
+	peek(c.io.done)
+	peek(c.io.dataIn.ready)
 
 	
     }
