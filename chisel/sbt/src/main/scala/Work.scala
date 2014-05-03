@@ -53,7 +53,10 @@ object Work {
             case "Mat4Inverse" => 
                 chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
                     c => new Mat4InverseTests(c, params) }
-    
+
+            case "LMSDecoder" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new LMSDecoder(params)) ) {
+                    c => new LMSDecoderTester(c) }
         }
     }
   }

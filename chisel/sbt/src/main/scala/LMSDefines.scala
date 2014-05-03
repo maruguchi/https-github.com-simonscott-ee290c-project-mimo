@@ -71,6 +71,6 @@ object LMSConstants
     val CONJ_TRANSP = UInt(1)
 
     // Fixed bit-widths (i.e. not parameterizable)
-    val REG_WD = 4
+    val REG_WD = 10
 }
 
