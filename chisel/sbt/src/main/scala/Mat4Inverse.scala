@@ -61,12 +61,12 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 	}
 
 	when (io.rst) {
-		Ainv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-		CAinv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-		AinvB := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-		schur := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-		schurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-		AinvBschurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		Ainv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		CAinv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		AinvB := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		schur := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		schurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
+//		AinvBschurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
 	} .elsewhen (step === UInt(0,1)) {
 		mat2inverse.io.matIn := A
 		Ainv := mat2inverse.io.matOut
