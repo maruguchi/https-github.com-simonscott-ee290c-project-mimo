@@ -54,6 +54,10 @@ object Work {
                 chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
                     c => new Mat4InverseTests(c, params) }
 
+            case "InitializeWeightsEngine" => 
+                chiselMainTest( args.slice(2, args.length), () => Module(new InitializeWeightsEngine()(params)) ) {
+                    c => new InitializeWeightsEngineTests(c, params) }
+
             case "LMSDecoder" => 
                 chiselMainTest( args.slice(2, args.length), () => Module(new LMSDecoder(params)) ) {
                     c => new LMSDecoderTester(c) }

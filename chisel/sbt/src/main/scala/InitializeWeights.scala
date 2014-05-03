@@ -29,7 +29,7 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 	val Nant = UInt(width = REG_WD).asInput
 
 	// SNR (linear)
-	val snr = SFix(width = REG_WD,exp = params.fix_pt_exp).asInput
+	val snr = UInt(width=10).asInput
 
 	// MatrixEngine IO for multiplying matrices
 	val toMatEngine = new MatrixEngineIO().flip()
@@ -40,6 +40,9 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 
 	// done flag
 	val done = Bool().asOutput
+
+	val probe = Vec.fill(params.max_ntx_nrx){ 
+		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp).asOutput } }
 }
 
 
@@ -60,70 +63,57 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 
 	// stores product H*H_hermitian
 	val product = Vec.fill(params.max_ntx_nrx){ 
-		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp) } }
+		Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
-	// stores kernel H*H_hermitian + SNR*eye(max_ntx_nrx)
+	// stores kernel H*H_hermitian + 1/SNR*eye(max_ntx_nrx)
 	val kernel = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp) } }
 
-	val snr_fix = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)
-	snr_fix.real := io.snr
-	snr_fix.imag := makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
+	val counter = Reg(init = UInt(0,5))
+	val process_inputs = io.start && (~io.rst) && (counter < UInt(6))
+	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(12))
+	val process_output = io.start && (~io.rst) && (counter > UInt(11))
 
-	val input_counter = Reg(init = UInt(0,4))
-	val process_inputs = io.start && (~io.rst) && (input_counter < UInt(6))
-	val process_kernel = io.start && (~io.rst) && (input_counter > UInt(5)) && (input_counter < UInt(12))
-	val process_output = io.start && (~io.rst) && (input_counter < UInt(6))
+	val done = process_output && (counter === UInt(18))
 	
-	when (process_inputs) {
-		input_counter := input_counter + UInt(1)
+	when ((process_inputs || process_kernel || process_output) && ~done) {
+		counter := counter + UInt(1)
 	}
 	when (io.rst) {
-		input_counter := UInt(0)
+		counter := UInt(0)
 	}
 
-	when (process_inputs) {
-		io.toMatEngine.matrixIn := channelMatrixHerm
-		when (input_counter === UInt(1)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(0)
-		} .elsewhen (input_counter === UInt(2)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(1)
-			product(0) := io.toMatEngine.result
-		} .elsewhen (input_counter === UInt(3)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(2)
-			product(1) := io.toMatEngine.result
-		} .elsewhen (input_counter === UInt(4)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			product(2) := io.toMatEngine.result
-		} .otherwise {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			product(3) := io.toMatEngine.result
+	// registers to store 1/snr*eye(Nant)
+	val snr_mat = Vec.fill(params.max_ntx_nrx){ 
+		Vec.fill(params.max_ntx_nrx){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	val snr_inv = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)
+	snr_inv.real.raw := UInt(1) / io.snr
+	snr_inv.imag.raw := Bits(0)
+
+	io.probe := snr_mat
+
+	for (i <- 0 until params.max_ntx_nrx) {
+		snr_mat(i)(i) := snr_inv
+	}
+
+	for (i <- 0 until params.max_ntx_nrx) {
+		for (j <- 0 until params.max_ntx_nrx) {
+			kernel(i)(j) := complex_add(product(i)(j), snr_mat(i)(j))
 		}
-	} .otherwise {
-		io.toMatEngine.vectorIn := Vec.fill(params.max_ntx_nrx){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}
 	}
 
 	val inverse2 = Module(new Mat2Inverse())
 	val inverse3 = Module(new Mat3Inverse())
 	val inverse4 = Module(new Mat4Inverse())
 
-	inverse4.io.rst := (input_counter < UInt(7))
+	inverse4.io.rst := (counter < UInt(7))
 
 	// inverse of the kernel
 	val inverse = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
 	when (process_kernel) {
-		for (i <- 0 until params.max_ntx_nrx) {
-			for (j <- 0 until params.max_ntx_nrx) {
-				when (i == j) {
-					kernel(i)(j) := product(i)(j) + snr_sfix
-				} .otherwise {
-					kernel(i)(j) := product(i)(j)
-				}
-			}
-		}
-
 		when (io.Nant === UInt(2)) {
 			for (i <- 0 until 2) {
 				for (j <- 0 until 2) {
@@ -145,8 +135,59 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 					inverse(i)(j) := inverse4.io.matOut(i)(j)
 				}
 			}
+		}
+	} .otherwise {
+		inverse2.io.matIn := Vec.fill(2){ Vec.fill(2){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
+		inverse3.io.matIn := Vec.fill(3){ Vec.fill(3){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
+		inverse4.io.matIn := Vec.fill(4){ Vec.fill(4){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
 	}
+
+	// inverse of the kernel
+	val result = Vec.fill(params.max_ntx_nrx){ 
+		Vec.fill(params.max_ntx_nrx) {Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
+
+	when (process_inputs) {
+		io.toMatEngine.matrixIn := channelMatrixHerm
+		when (counter === UInt(1)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(0)
+		} .elsewhen (counter === UInt(2)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(1)
+			product(0) := io.toMatEngine.result
+		} .elsewhen (counter === UInt(3)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(2)
+			product(1) := io.toMatEngine.result
+		} .elsewhen (counter === UInt(4)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(3)
+			product(2) := io.toMatEngine.result
+		} .otherwise {
+			io.toMatEngine.vectorIn := io.channelMatrix(3)
+			product(3) := io.toMatEngine.result
+		}
+	} .elsewhen (process_output && ~done) {
+		io.toMatEngine.matrixIn := inverse
+		when (counter === UInt(1)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(0)
+		} .elsewhen (counter === UInt(2)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(1)
+			result(0) := io.toMatEngine.result
+		} .elsewhen (counter === UInt(3)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(2)
+			result(1) := io.toMatEngine.result
+		} .elsewhen (counter === UInt(4)) {
+			io.toMatEngine.vectorIn := io.channelMatrix(3)
+			result(2) := io.toMatEngine.result
+		} .otherwise {
+			io.toMatEngine.vectorIn := io.channelMatrix(3)
+			result(3) := io.toMatEngine.result
+		}
+	} .otherwise {
+		io.toMatEngine.matrixIn := Vec.fill(params.max_ntx_nrx){ 
+			Vec.fill(params.max_ntx_nrx){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
+		io.toMatEngine.vectorIn := Vec.fill(params.max_ntx_nrx){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}
 	}
+
+	io.initialW := result
+	io.done := done
 		
 	
 }
