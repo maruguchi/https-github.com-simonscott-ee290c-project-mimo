@@ -13,6 +13,8 @@ class Mat4InverseIO(implicit params: LMSParams) extends Bundle()
 	val matIn = Vec.fill(4){ Vec.fill(4) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput } }
 
 	val matOut = Vec.fill(4){ Vec.fill(4) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
+
+	val rst = Bool().asInput
 }
 
 class Mat4Inverse (implicit params:LMSParams) extends Module
@@ -53,6 +55,10 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 
 	// keeps track of which step, sends appropriate matrices to inversion block
 	val step = Reg(init = UInt(0,1))
+
+	when (io.rst) {
+		step := UInt(0)
+	}
 
 	when (step === UInt(0,1)) {
 		mat2inverse.io.matIn := A
