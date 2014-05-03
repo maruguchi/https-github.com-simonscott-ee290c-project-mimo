@@ -48,6 +48,15 @@ object ComplexMathFunctions
 	return z
     }
 
+    // Function to perform a fix point real division
+    def fix_div(x: SFix, y: SFix)(implicit params: LMSParams): SFix = 
+    {
+	val z = SFix(width=x.raw.width, exp=x.exp)
+
+	z.raw := (x.raw << UInt(params.fix_pt_wd - y.exp)) / y.raw
+	return z
+    }
+
     // Function to add two complex numbers
     def complex_add(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix =
     {

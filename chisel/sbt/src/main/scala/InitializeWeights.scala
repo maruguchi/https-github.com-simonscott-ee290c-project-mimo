@@ -29,7 +29,7 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 	val Nant = UInt(width = REG_WD).asInput
 
 	// SNR (linear)
-	val snr = UInt(width=10).asInput
+	val snr = UInt(width=REG_WD).asInput
 
 	// MatrixEngine IO for multiplying matrices
 	val toMatEngine = new MatrixEngineIO().flip()
@@ -43,6 +43,8 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 
 	val probe = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp).asOutput } }
+
+	val probe_snr = SFix(width=params.fix_pt_wd, exp = REG_WD+1).asOutput
 }
 
 
@@ -71,8 +73,8 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 
 	val counter = Reg(init = UInt(0,5))
 	val process_inputs = io.start && (~io.rst) && (counter < UInt(6))
-	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(12))
-	val process_output = io.start && (~io.rst) && (counter > UInt(11))
+	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(19))
+	val process_output = io.start && (~io.rst) && (counter > UInt(18))
 
 	val done = process_output && (counter === UInt(18))
 	
@@ -87,14 +89,26 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val snr_mat = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
 
+	val snr_test = (io.snr).toSInt
+	val one_sfix = SFix(width = params.fix_pt_wd, exp=params.fix_pt_exp)
+	val snr_sfix = SFix(exp=REG_WD+1, width = params.fix_pt_wd)
+
+	one_sfix.raw := SInt(1) << UInt(params.fix_pt_frac_bits)
+	snr_sfix.raw := ((io.snr) << UInt(params.fix_pt_wd - REG_WD - 1)).toBits
+	io.probe_snr := snr_sfix
+
 	val snr_inv = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)
-	snr_inv.real.raw := UInt(1) / io.snr
+	snr_inv.real := fix_div(one_sfix, snr_sfix)
 	snr_inv.imag.raw := Bits(0)
 
-	io.probe := snr_mat
-
 	for (i <- 0 until params.max_ntx_nrx) {
-		snr_mat(i)(i) := snr_inv
+		for (j <- 0 until params.max_ntx_nrx) {
+			if (i == j) {
+				snr_mat(i)(j) := snr_inv
+			} else {
+				snr_mat(i)(j) := makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
+			}
+		}
 	}
 
 	for (i <- 0 until params.max_ntx_nrx) {
@@ -107,40 +121,52 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val inverse3 = Module(new Mat3Inverse())
 	val inverse4 = Module(new Mat4Inverse())
 
-	inverse4.io.rst := (counter < UInt(7))
+	inverse4.io.rst := (counter < UInt(8))
+
+	for (i <- 0 until 2) {
+		for (j <- 0 until 2) {
+			inverse2.io.matIn(i)(j) := kernel(i)(j)
+		}
+	}
+	for (i <- 0 until 3) {
+		for (j <- 0 until 3) {
+			inverse3.io.matIn(i)(j) := kernel(i)(j)
+		}
+	}
+	for (i <- 0 until 4) {
+		for (j <- 0 until 4) {
+			inverse4.io.matIn(i)(j) := kernel(i)(j)
+		}
+	}
 
 	// inverse of the kernel
 	val inverse = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
-	when (process_kernel) {
-		when (io.Nant === UInt(2)) {
-			for (i <- 0 until 2) {
-				for (j <- 0 until 2) {
-					inverse2.io.matIn(i)(j) := kernel(i)(j)
-					inverse(i)(j) := inverse2.io.matOut(i)(j)
-				}
-			}
-		} .elsewhen (io.Nant === UInt(1)) {
-			for (i <- 0 until 3) {
-				for (j <- 0 until 3) {
-					inverse3.io.matIn(i)(j) := kernel(i)(j)
-					inverse(i)(j) := inverse3.io.matOut(i)(j)
-				}
-			}
-		} .otherwise {
-			for (i <- 0 until 4) {
-				for (j <- 0 until 4) {
-					inverse4.io.matIn(i)(j) := kernel(i)(j)
-					inverse(i)(j) := inverse4.io.matOut(i)(j)
-				}
+	when (io.Nant === UInt(2)) {
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				inverse(i)(j) := inverse2.io.matOut(i)(j)
 			}
 		}
-	} .otherwise {
-		inverse2.io.matIn := Vec.fill(2){ Vec.fill(2){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
-		inverse3.io.matIn := Vec.fill(3){ Vec.fill(3){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
-		inverse4.io.matIn := Vec.fill(4){ Vec.fill(4){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
+	} .elsewhen (io.Nant === UInt(3)) {
+		for (i <- 0 until 3) {
+			for (j <- 0 until 3) {
+				inverse(i)(j) := inverse3.io.matOut(i)(j)
+			}
+		}
+	} .elsewhen (io.Nant === UInt(4)) {
+		for (i <- 0 until 4) {
+			for (j <- 0 until 4) {
+				inverse(i)(j) := inverse4.io.matOut(i)(j)
+			}
+		}
 	}
+
+	io.probe := inverse
+
+//	when (process_kernel) {
+//	}
 
 	// inverse of the kernel
 	val result = Vec.fill(params.max_ntx_nrx){ 
