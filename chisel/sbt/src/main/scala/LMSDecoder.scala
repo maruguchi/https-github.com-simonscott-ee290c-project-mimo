@@ -14,11 +14,11 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
     // The DecoupledIO interface contains 3 fields: ready (in), valid (out) and bits (out)
 
     // From the host to the decoder
-    val addr = UInt(width = params.addr_wd)
-    val data_h2d = Decoupled( new ComplexSInt(w = params.samp_wd) ).flip()
+    val addr = UInt(width = params.addr_wd).asInput
+    val data_h2d = Decoupled( Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)} ).flip()
 
     // From the decoder to the host
-    val data_d2h = Decoupled( UInt(width = params.symbol_wd) )
+    val data_d2h = Decoupled( Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)} )
 
     override def clone: this.type = { new LMSDecoderIO().asInstanceOf[this.type]; }
 }
@@ -31,65 +31,203 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     implicit val params = paramsIn
     val io = new LMSDecoderIO()
 
+    // Create the state variables for the control state machine
+    val st_RESET :: st_EST_CH :: st_INIT_W :: st_DECODE :: Nil = Enum(UInt(), 4)
+    val state = Reg(init = st_RESET)
+
+
+    // ***** Create and wire up the memories *****
+
     // Create the write enable logic
-    val mem_address = io.addr(params.addr_wd-3, 0)
+    val config_mem_address = io.addr(params.reg_addr_wd-1, 0)
+    val train_mem_address = io.addr(params.train_addr_wd-1, 0)
     val config_reg_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(0) ) & io.data_h2d.valid
     val train_mem_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(1) ) & io.data_h2d.valid
     val rx_data_queue_we = ( io.addr(params.addr_wd-1, params.addr_wd-2) === UInt(2) ) & io.data_h2d.valid
 
-    // Create the queues, registers and memory storage
-    val train_mem = Mem(new ComplexSInt(w = params.samp_wd), params.max_train_len)
-    val rx_data_queue = new Queue(new ComplexSInt(w = params.samp_wd), entries = params.fifo_len)
-    val decoded_data_queue = new Queue(UInt(width = params.symbol_wd), entries = params.fifo_len)
+    // Create the queues and memory storage
+    val train_mem = Mem(Bits(width=params.max_ntx_nrx*2*params.samp_wd), params.max_train_len, seqRead = false)
+    val rx_data_queue = Module(new Queue(Bits(width=params.max_ntx_nrx*2*params.samp_wd), entries = params.fifo_len))
+    val decoded_data_queue = Module(new Queue(Bits(width=params.max_ntx_nrx*params.symbol_wd), entries = params.fifo_len))
+
+    // Create the configuration registers
+    val ntx = Reg(init = UInt(0, width = REG_WD))
+    val nrx = Reg(init = UInt(0, width = REG_WD))
+    val train_len = Reg(init = UInt(0, width = REG_WD))
+    val modulation = Reg(init = UInt(0, width = REG_WD))
+    val snr = Reg(init = UInt(0, width = REG_WD))
+    val start = Reg(init = Bool(false))
 
     // Wire up the write interface to the registers
     when(config_reg_we) {
-        when(mem_address === UInt(0)) {
-            ConfigRegisters.ntx := io.data_h2d.bits.real(REG_WD-1, 0)
+        when(config_mem_address === UInt(0)) {
+            ntx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(1)) {
-            ConfigRegisters.nrx := io.data_h2d.bits.real(REG_WD-1, 0)
+        when(config_mem_address === UInt(1)) {
+            nrx := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(2)) {
-            ConfigRegisters.train_len := io.data_h2d.bits.real(REG_WD-1, 0)
+        when(config_mem_address === UInt(2)) {
+            train_len := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(3)) {
-            ConfigRegisters.modulation := io.data_h2d.bits.real(REG_WD-1, 0)
+        when(config_mem_address === UInt(3)) {
+            modulation := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(4)) {
-            ConfigRegisters.snr := io.data_h2d.bits.real(REG_WD-1, 0)
+        when(config_mem_address === UInt(4)) {
+            snr := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        .elsewhen(mem_address === UInt(5)) {
-            ConfigRegisters.start := io.data_h2d.bits.real(0)
+        when(config_mem_address === UInt(5) && (state === st_RESET || state === st_DECODE)) {
+            start := io.data_h2d.bits(0).real.raw(0)
         }
     }
 
     // Wire up the training sequence memory
     when(train_mem_we) {
-        train_mem(mem_address) := io.data_h2d.bits
+        train_mem( train_mem_address ) := io.data_h2d.bits.toBits
     }
-    // TODO: add the read interface
 
     // Wire up the RX data queue
-    rx_data_queue.io.enq.bits := io.data_h2d.bits
+    rx_data_queue.io.enq.bits <> io.data_h2d.bits.toBits
     rx_data_queue.io.enq.valid := rx_data_queue_we
     io.data_h2d.ready := rx_data_queue.io.enq.ready
-    // TODO: add the read interface
+    val rx_data_queue_vecOut = Vec.fill(params.max_ntx_nrx){
+                                new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}.fromBits(rx_data_queue.io.deq.bits)
 
     // Wire up the Decoded Data Memory
-    decoded_data_queue.io.deq <> io.data_d2h
-    // TODO: add the write interface
+    io.data_d2h.bits := Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}.fromBits(decoded_data_queue.io.deq.bits)
+    io.data_d2h.valid := decoded_data_queue.io.deq.valid
+    decoded_data_queue.io.deq.ready := io.data_d2h.ready
+
+
+    // ***** Create all the modules *****
 
     // Create the matrix engine
-    val matrixEngine = Module(new MatrixEngine())
+    val matrixEngine = Module(new MatrixEngine)
+
+    // Create the arbiter to control access to the matrix engine
+    val matrixArbiter = Module(new MatrixArbiter)
 
     // Create the channel estimator
-    val channelEstimator = Module(new ChannelEstimator())
+    val channelEstimator = Module(new ChannelEstimator)
 
     // Create the module to compute the initial weights
-    val initializeWeights = Module(new InitializeWeights())
+    val initializeWeights = Module(new InitializeWeights)
 
     // Create the actual adaptive decoder
-    val decoder = Module(new AdaptiveDecoder())
+    val adaptiveDecoder = Module(new AdaptiveDecoder)
+
+    
+    // ***** Create the control logic to enable/disable the modules *****
+
+    val channelEstimator_en = Bool()
+    val channelEstimator_rst = Bool()
+    val channelEstimator_done = Bool()
+    val initializeWeights_done = Bool()
+    val initializeWeights_en = Bool()
+    val initializeWeights_rst = Bool()
+    val adaptiveDecoder_en = Bool()
+    val adaptiveDecoder_resetW = Bool()
+
+    // The RESET state: only enter this upon power-up
+    when(state === st_RESET)
+    {
+        // If host started a new decode
+        when(start) {
+            state                   := st_EST_CH
+            channelEstimator_en     := Bool(true)
+        }
+        .otherwise {
+            channelEstimator_rst    := Bool(true)
+        }
+    }
+
+    // The ESTIMATE CHANNEL state:
+    .elsewhen(state === st_EST_CH)
+    {
+        start                       := Bool(false)
+        channelEstimator_en         := Bool(true)
+
+        when(channelEstimator_done) {
+            state                   := st_INIT_W
+            initializeWeights_rst   := Bool(true)
+        }
+    }
+
+    // The INITIALIZE WEIGHTS state:
+    .elsewhen(state === st_INIT_W)
+    {
+        initializeWeights_en        := Bool(true)
+
+        when(initializeWeights_done) {
+            state                   := st_DECODE
+            adaptiveDecoder_resetW  := Bool(true)
+        }
+    }
+
+    // The DECODE state:
+    .elsewhen(state === st_DECODE)
+    {
+        // Check if the host has requested a new frame be decoded
+        when(start) {
+            state                   := st_EST_CH
+            channelEstimator_en     := Bool(true)
+        }
+        .otherwise {
+            adaptiveDecoder_en      := Bool(true)
+            channelEstimator_rst    := Bool(true)
+        }
+    }
+
+    // The default state for signals not covered by states above
+    .otherwise
+    {
+        initializeWeights_rst       := Bool(false)
+        initializeWeights_en        := Bool(false)
+        channelEstimator_rst        := Bool(false)
+        channelEstimator_en         := Bool(false)
+        adaptiveDecoder_resetW      := Bool(false)
+        adaptiveDecoder_en          := Bool(false)
+    }
+   
+
+    // ***** Wire up all the modules *****
+
+    // Matrix engine
+    matrixEngine.io <> matrixArbiter.io.toMatrixEngine
+
+    // Channel estimator
+	channelEstimator.io.start               := channelEstimator_en
+	channelEstimator.io.rst                 := channelEstimator_rst
+	channelEstimator_done                   := channelEstimator.io.done
+    val trainMemOutBits                     = train_mem( channelEstimator.io.trainAddress )
+	channelEstimator.io.trainSequence       := Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}.fromBits(trainMemOutBits)
+	channelEstimator.io.dataIn.bits         := rx_data_queue_vecOut
+	channelEstimator.io.dataIn.valid        := rx_data_queue.io.deq.valid
+    matrixArbiter.io.reqChannelEstimator    := channelEstimator_en & (~channelEstimator_done)
+	matrixArbiter.io.toChannelEstimator     <> channelEstimator.io.toMatEngine
+
+    // Initialize weights
+    initializeWeights.io.channelMatrix      := channelEstimator.io.channelOut
+    initializeWeights.io.snr                := snr
+    initializeWeights.io.Nant               := nrx
+    initializeWeights.io.start              := initializeWeights_en    
+    initializeWeights.io.rst                := initializeWeights_rst    
+    initializeWeights_done                  := initializeWeights.io.done
+    matrixArbiter.io.toInitializeWeights    <> initializeWeights.io.toMatEngine
+    matrixArbiter.io.reqInitializeWeights   := initializeWeights_en & (~initializeWeights_done)
+    
+    // Adaptive decoder
+    adaptiveDecoder.io.wSeed                := initializeWeights.io.initialW
+    adaptiveDecoder.io.samples.bits         := rx_data_queue_vecOut
+    adaptiveDecoder.io.samples.valid        := rx_data_queue.io.deq.valid
+    decoded_data_queue.io.enq.bits          := adaptiveDecoder.io.decodedData.bits.toBits
+    decoded_data_queue.io.enq.valid         := adaptiveDecoder.io.decodedData.valid
+    adaptiveDecoder.io.decodedData.ready    := decoded_data_queue.io.enq.ready
+    adaptiveDecoder.io.resetW               := adaptiveDecoder_resetW
+    adaptiveDecoder.io.processSamples       := adaptiveDecoder_en
+    matrixArbiter.io.reqAdaptiveDecoder     := adaptiveDecoder.io.reqMatEngine
+    matrixArbiter.io.toAdaptiveDecoder      <> adaptiveDecoder.io.toMatEngine  
+
+    rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
+                                    (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
 }
 
