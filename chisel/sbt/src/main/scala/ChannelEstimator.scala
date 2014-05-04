@@ -71,11 +71,10 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     for(i <- 0 until params.max_ntx_nrx)
     {
 	when (process_inputs) {
-
-        dataMatrix(i)(input_counter).real.raw := io.dataIn.bits(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
-        dataMatrix(i)(input_counter).imag.raw := io.dataIn.bits(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
-	trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
-        trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+		dataMatrix(input_counter)(i).real.raw := io.dataIn.bits(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+		dataMatrix(input_counter)(i).imag.raw := io.dataIn.bits(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+		trainMatrix(input_counter)(i).real.raw := io.trainSequence(i).real.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
+		trainMatrix(input_counter)(i).imag.raw := io.trainSequence(i).imag.raw << UInt(params.fix_pt_frac_bits - params.samp_frac_bits)
 	}
     }
 
@@ -92,10 +91,8 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
     // always sends dataIn as matrix to engine
     io.toMatEngine.matrixIn := dataMatrix
 
-    val register0 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
-    val register1 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
-    val register2 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
-    val register3 = Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) }
+    val result = Vec.fill(params.max_ntx_nrx){ 
+	Vec.fill(params.max_ntx_nrx){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
     // send and receive appropriate column to matrix engine
     when (process_outputs && ~done) {
@@ -104,25 +101,30 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
 		io.toMatEngine.vectorIn := trainMatrix(0)
 	    } .elsewhen (output_counter === UInt(1)) {
 		io.toMatEngine.vectorIn := trainMatrix(1)
-		register0 := io.toMatEngine.result
+		for (i <- 0 until params.max_ntx_nrx) {
+			result(i)(0) := io.toMatEngine.result(i)
+		}
 	    } .elsewhen (output_counter === UInt(2)) {
 		io.toMatEngine.vectorIn := trainMatrix(2)
-		register1 := io.toMatEngine.result
+		for (i <- 0 until params.max_ntx_nrx) {
+			result(i)(1) := io.toMatEngine.result(i)
+		}
 	    } .elsewhen (output_counter === UInt(3)) {
 		io.toMatEngine.vectorIn := trainMatrix(3)
-		register2 := io.toMatEngine.result
+		for (i <- 0 until params.max_ntx_nrx) {
+			result(i)(2) := io.toMatEngine.result(i)
+		}
 	    } .otherwise {
 		io.toMatEngine.vectorIn := trainMatrix(3)
-		register3 := io.toMatEngine.result
+		for (i <- 0 until params.max_ntx_nrx) {
+			result(i)(3) := io.toMatEngine.result(i)
+		}
 	    }
     } .otherwise {
 		io.toMatEngine.vectorIn := Vec.fill(params.max_ntx_nrx){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}
     }
 
-    io.channelOut(0) := register0
-    io.channelOut(1) := register1
-    io.channelOut(2) := register2
-    io.channelOut(3) := register3
+    io.channelOut := result
     io.done := done
 
 }

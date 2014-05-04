@@ -145,15 +145,15 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
 //	peek(c.io.done)
 //	}
 
-//	step(6)
-//	peek(c.io.done)
-//	for(i <- 0 until params.max_ntx_nrx) {
-//		for(j <- 0 until params.max_ntx_nrx) {
-//			peek(c.io.channelOut(i)(j).real.raw)
-//			peek(c.io.channelOut(i)(j).imag.raw)
-//		}
-//	}
-
+	step(6)
+	peek(c.io.done)
+	for(i <- 0 until params.max_ntx_nrx) {
+		for(j <- 0 until params.max_ntx_nrx) {
+			peek(c.io.channelOut(i)(j).real.raw)
+			peek(c.io.channelOut(i)(j).imag.raw)
+		}
+	}
+/*******
 	step(1)
 	peek(c.io.trainAddress)
 	peek(c.io.dataIn.ready)
@@ -187,7 +187,7 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
 	step(1)
 	peek(c.io.done)
 	peek(c.io.dataIn.ready)
-
+*********/
 	
     }
 }
