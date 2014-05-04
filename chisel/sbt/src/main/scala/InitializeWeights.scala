@@ -122,6 +122,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val inverse4 = Module(new Mat4Inverse())
 
 	inverse4.io.rst := (counter < UInt(8))
+	inverse2.io.rst := (counter < UInt(8))
 
 	for (i <- 0 until 2) {
 		for (j <- 0 until 2) {
