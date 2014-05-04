@@ -179,6 +179,17 @@ object ComplexMathFunctions
         samp = if(samp < 0) ( pow(2, samp_bit_wd).toInt + samp ) else samp
         return samp
     }
+
+    // Flattens a vector of complex numbers to bits
+    def flattenVec(v: Vec[ComplexSFix], n: Int, w: Int): Bits =
+    {
+        val fv = Vec.fill(n){ UInt(width=2*w) }
+
+        for(i <- 0 until n)
+            fv(i) := Cat(v(i).imag.raw, v(i).real.raw)
+
+        return fv.toBits
+    }
 }
 
 

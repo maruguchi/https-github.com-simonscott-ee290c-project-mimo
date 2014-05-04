@@ -19,7 +19,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Form for training memory: [cycle=Int],[address=Int],[train_ant0_real=Float],[train_ant0_imag=Float],[train_ant1_real=Float], etc
     // Example: 6,20,1.26,-2.71,0.51
     val configTrainBusCommands = new HashMap[BigInt,Array[Double]]()
-    for (line <- scala.io.Source.fromFile("../test/configTrainBusCmds.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_50dB/configTrainBusCmds.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         configTrainBusCommands(command(0).toInt) = command.drop(1)
     }
@@ -31,7 +31,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 10,1.26,-2.71,0.51,...
     val receiveDataBusCommands = new ArrayBuffer[Array[Double]]
-    for (line <- scala.io.Source.fromFile("../test/receiveData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_50dB/receiveData.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         receiveDataBusCommands += command
     }
@@ -43,13 +43,13 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 1,0,2,3
     val decodedDataBusCommands = new ArrayBuffer[Array[Int]]
-    for (line <- scala.io.Source.fromFile("../test/decodedData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_50dB/decodedData.txt").getLines()) {
         val command = line.split(",").map(_.toInt)
         decodedDataBusCommands += command
     }
 
     // Number of cycles to run test
-    val cycles = 11
+    val cycles = 23
 
     var num_reads = 0
     var num_writes = 0
@@ -60,6 +60,29 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
 
     for (cycle <- 0 until cycles)
     {
+        // Debug output for this cycle
+        peek(c.state)
+        peekAt(c.train_mem, 0)
+        peek(c.channelEstimator.io.trainSequence)
+        peek(c.channelEstimator.io.trainAddress)
+
+        val chan_est_raw = peek(c.channelEstimator.io.channelOut)
+        for(i <- 0 until 4) {
+            for(j <- 0 until 8) {
+                val d = conv_fp_to_double(chan_est_raw(i*8 + j), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+                print(s"$d, ")
+            }
+            println(" ")
+        }
+        
+        val chan_est_in_raw = peek(c.channelEstimator.io.dataIn.bits)
+        for(i <- 0 until 8) {
+            val d = conv_fp_to_double(chan_est_in_raw(i), c.params.samp_frac_bits, c.params.samp_wd)
+            print(s"$d, ")
+        }
+        println(" ")
+        
+
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {
@@ -73,8 +96,8 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             // Else a train mem write
             else {
                 for(i <- 0 until (command.length-1)/2) {
-                    poke(c.io.data_h2d.bits(i).real.raw, conv_double_to_fp(command(i*2 + 1), c.params.fix_pt_frac_bits, c.params.fix_pt_wd))
-                    poke(c.io.data_h2d.bits(i).imag.raw, conv_double_to_fp(command(i*2 + 1), c.params.fix_pt_frac_bits, c.params.fix_pt_wd))
+                    poke(c.io.data_h2d.bits(i).real.raw, conv_double_to_fp(command(i*2 + 1), c.params.samp_frac_bits, c.params.samp_wd))
+                    poke(c.io.data_h2d.bits(i).imag.raw, conv_double_to_fp(command(i*2 + 2), c.params.samp_frac_bits, c.params.samp_wd))
                 }
             }
 
@@ -82,7 +105,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         }
 
         // Check for sample write
-        else if(receiveDataBusCommands(num_writes)(0).toInt >= cycle)
+        else if(num_writes < receiveDataBusCommands.length && cycle >= receiveDataBusCommands(num_writes)(0).toInt)
         {
             val receiveSamples = receiveDataBusCommands(num_writes).drop(1)
             
@@ -109,14 +132,14 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         // Check for read of the decoded symbols
         if(peek(c.io.data_d2h.valid) == 1)
         {
-            val expectedSymbols = decodedDataBusCommands(num_reads).drop(1)
+            val expectedSymbols = decodedDataBusCommands(num_reads)
 
             for(i <- 0 until expectedSymbols.length)
             {
                 val decodedSymbol = peek(c.io.data_d2h.bits(i))
 
                 if(decodedSymbol == expectedSymbols(i))
-                    println(s"Correctly decoded symbol number ${num_reads + i}: $decodedSymbol")
+                    println(s"Correctly decoded symbol number $num_reads:$i : $decodedSymbol")
                 else {
                     println(s"ERROR: incorrectly decoded symbol. Expected: ${expectedSymbols(i)} Got: $decodedSymbol")
                     num_sym_errors += 1

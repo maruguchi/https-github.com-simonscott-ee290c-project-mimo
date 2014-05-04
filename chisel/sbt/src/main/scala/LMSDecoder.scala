@@ -5,6 +5,7 @@ import Node._
 import scala.collection.mutable.HashMap
 import scala.math._
 import LMSConstants._
+import ComplexMathFunctions._
 
 
 // Define the top-level I/O interface for the LMS Decoder
@@ -80,13 +81,18 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
         }
     }
 
+    // Hack
+    val data_h2d_fv = Vec.fill(params.max_ntx_nrx){ UInt(width=2*io.data_h2d.bits(0).real.raw.width) }
+    for(i <- 0 until params.max_ntx_nrx)
+        data_h2d_fv(i) := Cat(io.data_h2d.bits(i).imag.raw.toBits, io.data_h2d.bits(i).real.raw.toBits)
+
     // Wire up the training sequence memory
     when(train_mem_we) {
-        train_mem( train_mem_address ) := io.data_h2d.bits.toBits
+        train_mem( train_mem_address ) := data_h2d_fv.toBits
     }
 
     // Wire up the RX data queue
-    rx_data_queue.io.enq.bits <> io.data_h2d.bits.toBits
+    rx_data_queue.io.enq.bits := data_h2d_fv.toBits
     rx_data_queue.io.enq.valid := rx_data_queue_we
     io.data_h2d.ready := rx_data_queue.io.enq.ready
     val rx_data_queue_vecOut = Vec.fill(params.max_ntx_nrx){
