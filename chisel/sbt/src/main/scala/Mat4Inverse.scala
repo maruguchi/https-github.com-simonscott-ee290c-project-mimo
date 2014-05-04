@@ -34,8 +34,8 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 	for (i <- 0 until 2) {
 		for (j <- 0 until 2) {
 			A(i)(j) := io.matIn(i)(j)
-			B(i)(j) := io.matIn(i+2)(j)
-			C(i)(j) := io.matIn(i)(j+2)
+			B(i)(j) := io.matIn(i)(j+2)
+			C(i)(j) := io.matIn(i+2)(j)
 			D(i)(j) := io.matIn(i+2)(j+2)
 		}
 	}
@@ -54,7 +54,7 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 	AinvBschurInv := mat2multiply( AinvB, schurInv )
 
 	// keeps track of which step, sends appropriate matrices to inversion block
-	val step = Reg(init = UInt(0,1))
+	val step = Reg(init = UInt(0,2))
 
 	when (io.rst) {
 		step := UInt(0)
@@ -67,10 +67,10 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 //		schur := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
 //		schurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
 //		AinvBschurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-	} .elsewhen (step === UInt(0,1)) {
+	} .elsewhen (step < UInt(2,2)) {
 		mat2inverse.io.matIn := A
 		Ainv := mat2inverse.io.matOut
-		step := UInt(1,1)
+		step := step + UInt(1)
 	} .otherwise {
 		mat2inverse.io.matIn := schur
 		schurInv := mat2inverse.io.matOut
@@ -91,8 +91,8 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 	for (i <- 0 until 2) {
 		for (j <- 0 until 2) {
 			io.matOut(i)(j) := Afinal(i)(j)
-			io.matOut(i+2)(j) := Bfinal(i)(j)
-			io.matOut(i)(j+2) := Cfinal(i)(j)
+			io.matOut(i)(j+2) := Bfinal(i)(j)
+			io.matOut(i+2)(j) := Cfinal(i)(j)
 			io.matOut(i+2)(j+2) := Dfinal(i)(j)
 		}
 	}
@@ -115,7 +115,7 @@ for (t <- 0 until 1)
 	}
 
         // Clock the module
-        step(6)
+        step(8)
 
 	println()
 	println()

@@ -59,7 +59,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 
 	for (i <- 0 until params.max_ntx_nrx) {
 		for (j <- 0 until params.max_ntx_nrx) {
-			channelMatrixHerm(i)(j) := conj(io.channelMatrix(i)(j))
+			channelMatrixHerm(i)(j) := conj(io.channelMatrix(j)(i))
 		}
 	}
 
@@ -76,7 +76,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(19))
 	val process_output = io.start && (~io.rst) && (counter > UInt(18))
 
-	val done = process_output && (counter === UInt(18))
+	val done = process_output && (counter === UInt(30))
 	
 	when ((process_inputs || process_kernel || process_output) && ~done) {
 		counter := counter + UInt(1)
@@ -163,8 +163,6 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 		}
 	}
 
-	io.probe := inverse
-
 //	when (process_kernel) {
 //	}
 
@@ -172,39 +170,61 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val result = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
+	io.probe := result
+
 	when (process_inputs) {
 		io.toMatEngine.matrixIn := channelMatrixHerm
 		when (counter === UInt(1)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(0)
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := io.channelMatrix(i)(0)
+			}
 		} .elsewhen (counter === UInt(2)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(1)
-			product(0) := io.toMatEngine.result
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := io.channelMatrix(i)(1)
+				product(i)(0) := io.toMatEngine.result(i)
+			}
 		} .elsewhen (counter === UInt(3)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(2)
-			product(1) := io.toMatEngine.result
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := io.channelMatrix(i)(2)
+				product(i)(1) := io.toMatEngine.result(i)
+			}
 		} .elsewhen (counter === UInt(4)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			product(2) := io.toMatEngine.result
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := io.channelMatrix(i)(3)
+				product(i)(2) := io.toMatEngine.result(i)
+			}
 		} .otherwise {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			product(3) := io.toMatEngine.result
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := io.channelMatrix(i)(3)
+				product(i)(3) := io.toMatEngine.result(i)
+			}
 		}
 	} .elsewhen (process_output && ~done) {
 		io.toMatEngine.matrixIn := inverse
-		when (counter === UInt(1)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(0)
-		} .elsewhen (counter === UInt(2)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(1)
-			result(0) := io.toMatEngine.result
-		} .elsewhen (counter === UInt(3)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(2)
-			result(1) := io.toMatEngine.result
-		} .elsewhen (counter === UInt(4)) {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			result(2) := io.toMatEngine.result
+		when (counter === UInt(21)) {
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(0)
+			}
+		} .elsewhen (counter === UInt(22)) {
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(1)
+				result(i)(0) := io.toMatEngine.result(i)
+			}
+		} .elsewhen (counter === UInt(23)) {
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(2)
+				result(i)(1) := io.toMatEngine.result(i)
+			}
+		} .elsewhen (counter === UInt(24)) {
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(3)
+				result(i)(2) := io.toMatEngine.result(i)
+			}
 		} .otherwise {
-			io.toMatEngine.vectorIn := io.channelMatrix(3)
-			result(3) := io.toMatEngine.result
+			for (i <- 0 until params.max_ntx_nrx) {
+				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(3)
+				result(i)(3) := io.toMatEngine.result(i)
+			}
 		}
 	} .otherwise {
 		io.toMatEngine.matrixIn := Vec.fill(params.max_ntx_nrx){ 

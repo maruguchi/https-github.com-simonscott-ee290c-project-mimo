@@ -36,11 +36,12 @@ object ComplexMathFunctions
     def complex_div(x: ComplexSFix, y: ComplexSFix)(implicit params: LMSParams): ComplexSFix = 
     {
 	val z = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
-	val prod = new ComplexSFix(w=x.real.raw.width, e=x.real.exp)
+	val prod = new ComplexSFix(w=2*x.real.raw.width, e=2*x.real.exp)
 
-	prod := complex_mult(x, conj(y))
+        prod.real := (x.real * y.real) + (x.imag * y.imag)
+        prod.imag := y.real * x.imag - y.imag * x.real
 
-	val den_mag = SFix(exp = params.fix_pt_exp, width = params.fix_pt_wd)
+	val den_mag = SFix(exp = 2*params.fix_pt_exp, width = 2*params.fix_pt_wd)
 	den_mag := y.real * y.real + y.imag * y.imag
 
 	z.real.raw := (prod.real.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
@@ -138,10 +139,10 @@ object ComplexMathFunctions
     {
         val matOut = Vec.fill(2){Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
 
-	matOut(0)(0) := complex_add( complex_mult( A(0)(0), B(0)(0) ), complex_mult( A(1)(0), B(0)(1) ) )
-	matOut(1)(0) := complex_add( complex_mult( A(0)(0), B(1)(0) ), complex_mult( A(1)(0), B(1)(1) ) )
-	matOut(0)(1) := complex_add( complex_mult( A(0)(1), B(0)(0) ), complex_mult( A(1)(1), B(0)(1) ) )
-	matOut(1)(1) := complex_add( complex_mult( A(0)(1), B(1)(0) ), complex_mult( A(1)(1), B(1)(1) ) )
+	matOut(0)(0) := complex_add( complex_mult( A(0)(0), B(0)(0) ), complex_mult( A(0)(1), B(1)(0) ) )
+	matOut(0)(1) := complex_add( complex_mult( A(0)(0), B(0)(1) ), complex_mult( A(0)(1), B(1)(1) ) )
+	matOut(1)(0) := complex_add( complex_mult( A(1)(0), B(0)(0) ), complex_mult( A(1)(1), B(1)(0) ) )
+	matOut(1)(1) := complex_add( complex_mult( A(1)(0), B(0)(1) ), complex_mult( A(1)(1), B(1)(1) ) )
 
         return matOut
     }
