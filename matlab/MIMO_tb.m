@@ -1,5 +1,5 @@
-channel_model = 'C';
-decoder_type = 'all';
+channel_model = 'B';
+decoder_type = 'LMS_seeded';
 plotEnable = 0;
 numAvg = 10;
 mu_LMS = 0.01;
@@ -11,8 +11,8 @@ else
     numDecoders = 1;
 end
 
-SNR_dB = linspace(0,30,11);
-% SNR_dB = 30;
+% SNR_dB = linspace(0,30,11);
+SNR_dB = 50;
 
 SER = zeros(numAvg,length(SNR_dB),numDecoders);
 

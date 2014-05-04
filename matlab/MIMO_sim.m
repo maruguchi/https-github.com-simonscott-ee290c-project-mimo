@@ -1,19 +1,19 @@
 function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, decoder_type, plotEnable, channel_model)
 
 % Transmit parameters
-Ntx = 2;
+Ntx = 4;
 trainLength = 1000;
 dataLength = 1000;
 transmitLength = trainLength + dataLength;
 
 % Receive parameters
-Nrx = 2;
+Nrx = 4;
 % SNR = 20; %dB
 nse = 10^(-SNR_dB/20);
 
 % Channel time-varying parameters
-time_varying = 1;
-doppler_f = 3;
+time_varying = 0;
+doppler_f = .003;
 
 % The data that is transmitted
 training = 1/sqrt(2)*(randi(2,Ntx,trainLength)*2-3 + 1j*(randi(2,Ntx,trainLength)*2-3));
@@ -99,4 +99,6 @@ if(plotEnable == 1)
     stem(sum(abs(decodedData-transmitted)/2,1));
 end
 
+generate_chisel_config_files(Nrx,Ntx,SNR_dB,trainIn,rx,transmitted)
+transmitted(:,1:10)
 end
