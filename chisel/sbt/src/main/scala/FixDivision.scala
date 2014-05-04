@@ -19,14 +19,19 @@ class FixDivision (implicit params:LMSParams) extends Module
 {
 	val io = new FixDivisionIO()
 
-	val den_mag = SFix(exp = params.fix_pt_exp, width = params.fix_pt_wd)
+	val z = Reg(new ComplexSFix(w=io.num.real.raw.width, e=io.num.real.exp))
+	val prod = new ComplexSFix(w=2*io.num.real.raw.width, e=2*io.num.real.exp)
+
+        prod.real := (io.num.real * io.den.real) + (io.num.imag * io.den.imag)
+        prod.imag := io.den.real * io.num.imag - io.den.imag * io.num.real
+
+	val den_mag = SFix(exp = 2*params.fix_pt_exp, width = 2*params.fix_pt_wd)
 	den_mag := io.den.real * io.den.real + io.den.imag * io.den.imag
 
-	val product = new ComplexSFix(w=20,e=8)
-	product := complex_mult(io.num, conj(io.den))
+	z.real.raw := (prod.real.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
+	z.imag.raw := (prod.imag.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
 
-	io.result.real.raw := (product.real.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
-	io.result.imag.raw := (product.imag.raw << UInt(params.fix_pt_wd - params.fix_pt_exp)) / den_mag.raw
+	io.result := z
 }
 
 class FixDivisionTests(c: FixDivision, params: LMSParams) extends Tester(c)
@@ -47,7 +52,7 @@ for (t <- 0 until 1)
         poke(c.io.den.imag.raw, den_i)
 
         // Clock the module
-        step(1)
+        step(2)
 
         // Check the output
 	val yr = peek(c.io.result.real.raw)
