@@ -31,6 +31,10 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     implicit val params = paramsIn
     val io = new LMSDecoderIO()
 
+    // Create the state variables for the control state machine
+    val st_RESET :: st_EST_CH :: st_INIT_W :: st_DECODE :: Nil = Enum(UInt(), 4)
+    val state = Reg(init = st_RESET)
+
 
     // ***** Create and wire up the memories *****
 
@@ -71,7 +75,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
         when(config_mem_address === UInt(4)) {
             snr := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
-        when(config_mem_address === UInt(5)) {
+        when(config_mem_address === UInt(5) && (state === st_RESET || state === st_DECODE)) {
             start := io.data_h2d.bits(0).real.raw(0)
         }
     }
@@ -106,7 +110,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val channelEstimator = Module(new ChannelEstimator)
 
     // Create the module to compute the initial weights
-    // val initializeWeights = Module(new InitializeWeights)
+    val initializeWeights = Module(new InitializeWeights)
 
     // Create the actual adaptive decoder
     val adaptiveDecoder = Module(new AdaptiveDecoder)
@@ -114,16 +118,76 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     
     // ***** Create the control logic to enable/disable the modules *****
 
-    // Lots of TODO
-    val cnt = Reg(UInt(width=4))
-    cnt := Mux(start, cnt + UInt(1), cnt)
-
-    val channelEstimator_en = (cnt === UInt(1))
-    val channelEstimator_reset = (cnt === UInt(0))
+    val channelEstimator_en = Bool()
+    val channelEstimator_rst = Bool()
     val channelEstimator_done = Bool()
-    val adaptiveDecoder_en = (cnt >= UInt(5))
-    val adaptiveDecoder_resetW = (cnt === UInt(5))
-    
+    val initializeWeights_done = Bool()
+    val initializeWeights_en = Bool()
+    val initializeWeights_rst = Bool()
+    val adaptiveDecoder_en = Bool()
+    val adaptiveDecoder_resetW = Bool()
+
+    // The RESET state: only enter this upon power-up
+    when(state === st_RESET)
+    {
+        // If host started a new decode
+        when(start) {
+            state                   := st_EST_CH
+            channelEstimator_en     := Bool(true)
+        }
+        .otherwise {
+            channelEstimator_rst    := Bool(true)
+        }
+    }
+
+    // The ESTIMATE CHANNEL state:
+    .elsewhen(state === st_EST_CH)
+    {
+        start                       := Bool(false)
+        channelEstimator_en         := Bool(true)
+
+        when(channelEstimator_done) {
+            state                   := st_INIT_W
+            initializeWeights_rst   := Bool(true)
+        }
+    }
+
+    // The INITIALIZE WEIGHTS state:
+    .elsewhen(state === st_INIT_W)
+    {
+        initializeWeights_en        := Bool(true)
+
+        when(initializeWeights_done) {
+            state                   := st_DECODE
+            adaptiveDecoder_resetW  := Bool(true)
+        }
+    }
+
+    // The DECODE state:
+    .elsewhen(state === st_DECODE)
+    {
+        // Check if the host has requested a new frame be decoded
+        when(start) {
+            state                   := st_EST_CH
+            channelEstimator_en     := Bool(true)
+        }
+        .otherwise {
+            adaptiveDecoder_en      := Bool(true)
+            channelEstimator_rst    := Bool(true)
+        }
+    }
+
+    // The default state for signals not covered by states above
+    .otherwise
+    {
+        initializeWeights_rst       := Bool(false)
+        initializeWeights_en        := Bool(false)
+        channelEstimator_rst        := Bool(false)
+        channelEstimator_en         := Bool(false)
+        adaptiveDecoder_resetW      := Bool(false)
+        adaptiveDecoder_en          := Bool(false)
+    }
+   
 
     // ***** Wire up all the modules *****
 
@@ -132,7 +196,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Channel estimator
 	channelEstimator.io.start               := channelEstimator_en
-	channelEstimator.io.rst                 := channelEstimator_reset
+	channelEstimator.io.rst                 := channelEstimator_rst
 	channelEstimator_done                   := channelEstimator.io.done
     val trainMemOutBits                     = train_mem( channelEstimator.io.trainAddress )
 	channelEstimator.io.trainSequence       := Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}.fromBits(trainMemOutBits)
@@ -141,12 +205,18 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     matrixArbiter.io.reqChannelEstimator    := channelEstimator_en & (~channelEstimator_done)
 	matrixArbiter.io.toChannelEstimator     <> channelEstimator.io.toMatEngine
 
-    rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
-                                    (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
-
+    // Initialize weights
+    initializeWeights.io.channelMatrix      := channelEstimator.io.channelOut
+    initializeWeights.io.snr                := snr
+    initializeWeights.io.Nant               := nrx
+    initializeWeights.io.start              := initializeWeights_en    
+    initializeWeights.io.rst                := initializeWeights_rst    
+    initializeWeights_done                  := initializeWeights.io.done
+    matrixArbiter.io.toInitializeWeights    <> initializeWeights.io.toMatEngine
+    matrixArbiter.io.reqInitializeWeights   := initializeWeights_en & (~initializeWeights_done)
+    
     // Adaptive decoder
-    //adaptiveDecoder.io.wSeed <>
-    adaptiveDecoder.io.wSeed                <> channelEstimator.io.channelOut  // This line is wrong! Remove it! Just here for testing!
+    adaptiveDecoder.io.wSeed                := initializeWeights.io.initialW
     adaptiveDecoder.io.samples.bits         := rx_data_queue_vecOut
     adaptiveDecoder.io.samples.valid        := rx_data_queue.io.deq.valid
     decoded_data_queue.io.enq.bits          := adaptiveDecoder.io.decodedData.bits.toBits
@@ -157,11 +227,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     matrixArbiter.io.reqAdaptiveDecoder     := adaptiveDecoder.io.reqMatEngine
     matrixArbiter.io.toAdaptiveDecoder      <> adaptiveDecoder.io.toMatEngine  
 
-    // Initialize weights
-    // 	? := channelEstimator.io.channelOut
-    matrixArbiter.io.reqInitializeWeights := Bool(false)
-    
-    // TODO
-
+    rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
+                                    (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
 }
 

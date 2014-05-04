@@ -53,6 +53,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
 
     var num_reads = 0
     var num_writes = 0
+    var num_sym_errors = 0
 
 
     //****** RUN TESTS ****** 
@@ -110,9 +111,16 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         {
             val expectedSymbols = decodedDataBusCommands(num_reads).drop(1)
 
-            for(i <- 0 until expectedSymbols.length/2) {
-                expect(c.io.data_d2h.bits(i), expectedSymbols(i*2 + 0))
-                expect(c.io.data_d2h.bits(i), expectedSymbols(i*2 + 1))
+            for(i <- 0 until expectedSymbols.length)
+            {
+                val decodedSymbol = peek(c.io.data_d2h.bits(i))
+
+                if(decodedSymbol == expectedSymbols(i))
+                    println(s"Correctly decoded symbol number ${num_reads + i}: $decodedSymbol")
+                else {
+                    println(s"ERROR: incorrectly decoded symbol. Expected: ${expectedSymbols(i)} Got: $decodedSymbol")
+                    num_sym_errors += 1
+                }
             }
             poke(c.io.data_d2h.ready, 1)
             num_reads += 1
@@ -126,4 +134,8 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         // Next clock cycle
         step(1);
     }
+
+    val ber = num_sym_errors.toDouble / (num_reads * 4.0)
+    println("---------------------------------------------------------")
+    println(s"Test complete. ${num_sym_errors} out of ${num_reads*4} symbols incorrect. BER = $ber")
 }
