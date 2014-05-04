@@ -33,6 +33,9 @@ class ChannelEstimatorEngineIO(implicit params: LMSParams) extends Bundle()
 	// output with channel estimate matrix
 	val channelOut = Vec.fill(params.max_ntx_nrx){
                     Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}}
+	
+	// Number of Tx/Rx antennas
+	val Nant = UInt(width = REG_WD).asInput
 }
 
 
@@ -47,6 +50,7 @@ class ChannelEstimatorEngine(implicit params: LMSParams) extends Module
     estimator.io.dataIn <> io.dataIn
     estimator.io.start := io.start
     estimator.io.rst := io.rst
+    estimator.io.Nant := io.Nant
     io.channelOut := estimator.io.channelOut
     io.done := estimator.io.done
     io.trainAddress := estimator.io.trainAddress
@@ -70,6 +74,7 @@ class ChannelEstimatorEngineTests(c: ChannelEstimatorEngine, params: LMSParams) 
         // Apply inputs
 
 	poke(c.io.start, 1)
+	poke(c.io.Nant, 2)
 
         for(i <- 0 until params.max_ntx_nrx) {
 		poke(c.io.dataIn.valid, 1)

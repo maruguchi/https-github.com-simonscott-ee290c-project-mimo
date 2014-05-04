@@ -40,6 +40,9 @@ class ChannelEstimatorIO(implicit params: LMSParams) extends Bundle()
 
 	// interface to the matrix engine
 	val toMatEngine = new MatrixEngineIO().flip()
+	
+	// Number of Tx/Rx antennas
+	val Nant = UInt(width = REG_WD).asInput
 }
 
 
@@ -102,22 +105,26 @@ class ChannelEstimator(implicit params: LMSParams) extends Module
 	    } .elsewhen (output_counter === UInt(1)) {
 		io.toMatEngine.vectorIn := trainMatrix(1)
 		for (i <- 0 until params.max_ntx_nrx) {
-			result(i)(0) := io.toMatEngine.result(i)
+			result(i)(0).real.raw := io.toMatEngine.result(i).real.raw >> (io.Nant >> UInt(1))
+			result(i)(0).imag.raw := io.toMatEngine.result(i).imag.raw >> (io.Nant >> UInt(1))
 		}
 	    } .elsewhen (output_counter === UInt(2)) {
 		io.toMatEngine.vectorIn := trainMatrix(2)
 		for (i <- 0 until params.max_ntx_nrx) {
-			result(i)(1) := io.toMatEngine.result(i)
+			result(i)(1).real.raw := io.toMatEngine.result(i).real.raw >> (io.Nant >> UInt(1))
+			result(i)(1).imag.raw := io.toMatEngine.result(i).imag.raw >> (io.Nant >> UInt(1))
 		}
 	    } .elsewhen (output_counter === UInt(3)) {
 		io.toMatEngine.vectorIn := trainMatrix(3)
 		for (i <- 0 until params.max_ntx_nrx) {
-			result(i)(2) := io.toMatEngine.result(i)
+			result(i)(2).real.raw := io.toMatEngine.result(i).real.raw >> (io.Nant >> UInt(1))
+			result(i)(2).imag.raw := io.toMatEngine.result(i).imag.raw >> (io.Nant >> UInt(1))
 		}
 	    } .otherwise {
 		io.toMatEngine.vectorIn := trainMatrix(3)
 		for (i <- 0 until params.max_ntx_nrx) {
-			result(i)(3) := io.toMatEngine.result(i)
+			result(i)(3).real.raw := io.toMatEngine.result(i).real.raw >> (io.Nant >> UInt(1))
+			result(i)(3).imag.raw := io.toMatEngine.result(i).imag.raw >> (io.Nant >> UInt(1))
 		}
 	    }
     } .otherwise {
