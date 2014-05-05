@@ -49,11 +49,15 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 100
+    val cycles = 1000
 
+    // Keep track of how many symbols read and written
     var num_reads = 0
     var num_writes = 0
     var num_sym_errors = 0
+
+    // Miscellaneous variables
+    var sentSamplesLastCycle = true
 
 
     //****** RUN TESTS ****** 
@@ -66,16 +70,9 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         peek(c.channelEstimator.io.trainAddress)
         peek(c.initializeWeights.io.done)
         println(s"SNR inv = ${conv_fp_to_double(peek(c.initializeWeights.io.snr_inv.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)}")
-/*
-        // Training sequence going into channel estimator
-        for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
-            val im = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
-            println(s"[$re , $im]")
-        }
-*/
+
         // Samples going into adaptive decoder
-        for(i <- 0 until c.params.max_ntx_nrx) {
+/*        for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             val im = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
@@ -87,7 +84,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             val im = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
-
+*/
         // The decoded symbols as complex numbers
         for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.toMatEngine.result(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
@@ -95,7 +92,13 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             println(s"[$re , $im]")
         }
 
-        // First row of W seed matrix going into adaptive decoder
+        // The error
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.io.error(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.io.error(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            println(s"[$re , $im]")
+        }
+
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {
@@ -127,10 +130,14 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         // Check for sample write
         else if(num_writes < receiveDataBusCommands.length && cycle >= receiveDataBusCommands(num_writes)(0).toInt)
         {
-            val receiveSamples = receiveDataBusCommands(num_writes).drop(1)
-            
             if(peek(c.io.data_h2d.ready) == 1)
             {
+                //Fixup code to handle lost samples
+                if(!sentSamplesLastCycle)
+                    num_writes -= 1
+
+                val receiveSamples = receiveDataBusCommands(num_writes).drop(1)
+
                 for(i <- 0 until receiveSamples.length/2) {
                     poke(c.io.data_h2d.bits(i).real.raw, conv_double_to_fp(receiveSamples(i*2 + 0), c.params.samp_frac_bits, c.params.samp_wd))
                     poke(c.io.data_h2d.bits(i).imag.raw, conv_double_to_fp(receiveSamples(i*2 + 1), c.params.samp_frac_bits, c.params.samp_wd))
@@ -139,9 +146,13 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
                 poke(c.io.addr, pow(2, c.params.addr_wd-1).toInt)
                 poke(c.io.data_h2d.valid, 1)
                 num_writes += 1
+                sentSamplesLastCycle = true
             }
             else
+            {
                 poke(c.io.data_h2d.valid, 0)
+                sentSamplesLastCycle = false
+            }
         }
 
         // Else we are not writing this cycle, so set valid to low
@@ -168,11 +179,6 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             num_reads += 1
         }
         
-        // Else we are not reading this cycle, so set ready to low
-        else {
-            poke(c.io.data_d2h.ready, 0)
-        }
-
         poke(c.io.data_d2h.ready, 1)
 
         // Next clock cycle

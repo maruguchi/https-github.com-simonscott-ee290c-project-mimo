@@ -22,6 +22,8 @@ class LMSDecoderIO(implicit params: LMSParams) extends Bundle()
     // From the decoder to the host
     val data_d2h = Decoupled( Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)} )
 
+    val error = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}
+
     override def clone: this.type = { new LMSDecoderIO().asInstanceOf[this.type]; }
 }
 
@@ -237,6 +239,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     adaptiveDecoder.io.processSamples       := adaptiveDecoder_en
     matrixArbiter.io.reqAdaptiveDecoder     := adaptiveDecoder.io.reqMatEngine
     matrixArbiter.io.toAdaptiveDecoder      <> adaptiveDecoder.io.toMatEngine  
+    adaptiveDecoder.io.error                <> io.error
 
     rx_data_queue.io.deq.ready := (channelEstimator_en & channelEstimator.io.dataIn.ready) |
                                     (adaptiveDecoder_en & adaptiveDecoder.io.samples.ready)
