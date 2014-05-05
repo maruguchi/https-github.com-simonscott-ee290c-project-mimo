@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 80 // 23
+    val cycles = 80
 
     var num_reads = 0
     var num_writes = 0
@@ -156,14 +156,15 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
                     num_sym_errors += 1
                 }
             }
-            poke(c.io.data_d2h.ready, 1)
             num_reads += 1
         }
-
+        
         // Else we are not reading this cycle, so set ready to low
         else {
             poke(c.io.data_d2h.ready, 0)
         }
+
+        poke(c.io.data_d2h.ready, 1)
 
         // Next clock cycle
         step(1);
