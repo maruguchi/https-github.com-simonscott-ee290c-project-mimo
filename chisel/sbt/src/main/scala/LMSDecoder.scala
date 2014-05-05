@@ -6,6 +6,7 @@ import scala.collection.mutable.HashMap
 import scala.math._
 import LMSConstants._
 import ComplexMathFunctions._
+import FixedPoint._
 
 
 // Define the top-level I/O interface for the LMS Decoder
@@ -56,7 +57,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val nrx = Reg(init = UInt(0, width = REG_WD))
     val train_len = Reg(init = UInt(0, width = REG_WD))
     val modulation = Reg(init = UInt(0, width = REG_WD))
-    val snr_inv = Reg(init = UInt(0, width = REG_WD))
+    val snr_inv = Reg(init = SInt(0, width=params.fix_pt_wd))
     val start = Reg(init = Bool(false))
 
     // Wire up the write interface to the registers
@@ -74,7 +75,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
             modulation := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
         when(config_mem_address === UInt(4)) {
-            snr_inv := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+            snr_inv := Cat(io.data_h2d.bits(0).imag.raw, io.data_h2d.bits(0).real.raw)
         }
         when(config_mem_address === UInt(5) && (state === st_RESET || state === st_DECODE)) {
             start := io.data_h2d.bits(0).real.raw(0)
@@ -215,7 +216,9 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Initialize weights
     initializeWeights.io.channelMatrix      <> channelEstimator.io.channelOut
-    initializeWeights.io.snr_inv            := snr_inv
+    val snr_inv_fp = SFix(width=params.fix_pt_wd, exp=params.fix_pt_exp)
+    snr_inv_fp.raw := snr_inv
+    initializeWeights.io.snr_inv            := snr_inv_fp
     initializeWeights.io.Nant               := nrx
     initializeWeights.io.start              := initializeWeights_en    
     initializeWeights.io.rst                := initializeWeights_rst    

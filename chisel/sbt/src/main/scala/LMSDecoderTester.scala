@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 80
+    val cycles = 100
 
     var num_reads = 0
     var num_writes = 0
@@ -65,6 +65,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         peekAt(c.train_mem, 0)
         peek(c.channelEstimator.io.trainAddress)
         peek(c.initializeWeights.io.done)
+        println(s"SNR inv = ${conv_fp_to_double(peek(c.initializeWeights.io.snr_inv.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)}")
 /*
         // Training sequence going into channel estimator
         for(i <- 0 until c.params.max_ntx_nrx) {
@@ -80,20 +81,21 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             println(s"[$re , $im]")
         }
 
-        // First row of inverse(H x H_hermitian + 1/SNR matrix)
-        for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.initializeWeights.inverse(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
-            val im = conv_fp_to_double(peek(c.initializeWeights.inverse(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
-            println(s"[$re , $im]")
-        }
-
-        // First row of W seed matrix going into adaptive decoder
+        // First row  of W seed matrix
         for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             val im = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
 
+        // The decoded symbols as complex numbers
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.toMatEngine.result(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.adaptiveDecoder.io.toMatEngine.result(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            println(s"[$re , $im]")
+        }
+
+        // First row of W seed matrix going into adaptive decoder
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {
@@ -101,9 +103,16 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             poke(c.io.addr, command(0).toInt)
 
             // If a config register write
-            if(command.length == 2)
-                poke(c.io.data_h2d.bits(0).real.raw, command(1).toInt)
-
+            if(command.length == 2) {
+                if(command(0).toInt == 4) {
+                    val snr_low_word = conv_double_to_fp(command(1), c.params.fix_pt_frac_bits, c.params.fix_pt_wd) & (pow(2, c.params.samp_wd).toInt-1)
+                    val snr_high_word = conv_double_to_fp(command(1), c.params.fix_pt_frac_bits, c.params.fix_pt_wd) >> c.params.samp_wd
+                    poke(c.io.data_h2d.bits(0).real.raw, snr_low_word)
+                    poke(c.io.data_h2d.bits(0).imag.raw, snr_high_word)
+                }
+                else
+                    poke(c.io.data_h2d.bits(0).real.raw, command(1).toInt)
+            }
             // Else a train mem write
             else {
                 for(i <- 0 until (command.length-1)/2) {
