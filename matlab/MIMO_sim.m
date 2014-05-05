@@ -25,7 +25,7 @@ transmitted = [training data];
 % mu=0 std_dev=1/sqrt(2), for both real and imag parts
 % Modeled version of H uses 802.11n channel model B
 global H;
-channel_type = 'modeled';
+channel_type = 'random';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
@@ -100,5 +100,4 @@ if(plotEnable == 1)
 end
 
 generate_chisel_config_files(Nrx,Ntx,SNR_dB,trainIn,rx,transmitted)
-transmitted(:,1:10)
 end

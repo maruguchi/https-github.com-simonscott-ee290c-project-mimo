@@ -12,7 +12,7 @@ else
 end
 
 % SNR_dB = linspace(0,30,11);
-SNR_dB = 50;
+SNR_dB = 27;
 
 SER = zeros(numAvg,length(SNR_dB),numDecoders);
 
