@@ -224,7 +224,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     matrixArbiter.io.reqInitializeWeights   := initializeWeights_en & (~initializeWeights_done)
     
     // Adaptive decoder
-    adaptiveDecoder.io.wSeed                := initializeWeights.io.initialW
+    adaptiveDecoder.io.wSeed                <> initializeWeights.io.initialW
     adaptiveDecoder.io.samples.bits         := rx_data_queue_vecOut
     adaptiveDecoder.io.samples.valid        := rx_data_queue.io.deq.valid
     decoded_data_queue.io.enq.bits          := adaptiveDecoder.io.decodedData.bits.toBits

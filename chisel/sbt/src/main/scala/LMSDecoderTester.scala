@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 23 // 23
+    val cycles = 80 // 23
 
     var num_reads = 0
     var num_writes = 0
@@ -64,7 +64,8 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         peek(c.state)
         peekAt(c.train_mem, 0)
         peek(c.channelEstimator.io.trainAddress)
-
+        peek(c.initializeWeights.io.done)
+/*
         // Training sequence going into channel estimator
         for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
@@ -72,17 +73,24 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             println(s"[$re , $im]")
         }
 
-        // Samples going into channel estimator
+        // Samples going into adaptive decoder
         for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.channelEstimator.io.dataIn.bits(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
-            val im = conv_fp_to_double(peek(c.channelEstimator.io.dataIn.bits(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.samples.bits(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            val im = conv_fp_to_double(peek(c.adaptiveDecoder.io.samples.bits(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            println(s"[$re , $im]")
+        }
+*/
+        // First row of inverse(H x H_hermitian + 1/SNR matrix)
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.initializeWeights.inverse(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.initializeWeights.inverse(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
 
-        // First row of matrix coming out of channel estimator
+        // First row of W seed matrix going into adaptive decoder
         for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.channelEstimator.io.channelOut(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
-            val im = conv_fp_to_double(peek(c.channelEstimator.io.channelOut(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.wSeed(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.adaptiveDecoder.io.wSeed(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
 

@@ -31,8 +31,8 @@ case class LMSParams()
 
     val symbol_wd = log2Up(4)
 
-    val fix_pt_wd = 20
-    val fix_pt_exp = 8      // 8 bits int, 12 bits of decimal = 0.0002 resolution
+    val fix_pt_wd = 24       // was 20 and 8
+    val fix_pt_exp = 12      // 8 bits int, 12 bits of decimal = 0.0002 resolution
     val fix_pt_frac_bits = fix_pt_wd - fix_pt_exp
 }
 
