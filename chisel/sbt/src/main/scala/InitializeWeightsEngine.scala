@@ -87,7 +87,7 @@ for (t <- 0 until 1)
 		}
 	}
 
-	step(36)
+	step(32)
 	peek(c.initializer.inverse4.io.rst)
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {
@@ -101,15 +101,6 @@ for (t <- 0 until 1)
 	peek(c.io.done)
 	step(1)
 	peek(c.io.done)
-	step(1)
-	peek(c.io.done)
-	step(1)
-	peek(c.io.done)
-	step(1)
-	peek(c.io.done)
-	step(1)
-	peek(c.io.done)
-	step(1)
 
 }
 }

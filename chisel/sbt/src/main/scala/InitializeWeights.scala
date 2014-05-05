@@ -77,8 +77,8 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(19))
 	val process_output = io.start && (~io.rst) && (counter > UInt(18))
 
-	val done = process_output && (counter >= UInt(36))
-	
+	val done = process_output && (counter >= UInt(31))
+
 	when ((process_inputs || process_kernel || process_output) && ~done) {
 		counter := counter + UInt(1)
 	}
@@ -89,19 +89,6 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	// wires with matrix 1/snr*eye(Nant)
 	val snr_mat = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
-/*
-	val snr_test = (io.snr).toSInt
-	val one_sfix = SFix(width = params.fix_pt_wd, exp=params.fix_pt_exp)
-	val snr_sfix = SFix(exp=REG_WD+1, width = params.fix_pt_wd)
-
-	one_sfix.raw := SInt(1) << UInt(params.fix_pt_frac_bits)
-	snr_sfix.raw := ((io.snr) << UInt(params.fix_pt_wd - REG_WD - 1)).toBits
-	io.probe_snr := snr_sfix
-
-	val snr_inv = new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)
-	snr_inv.real := fix_div(one_sfix, snr_sfix)
-	snr_inv.imag.raw := Bits(0)
-*/
 
 	// create matrix with 1/snr and add it to the product to form kernel
 	for (i <- 0 until params.max_ntx_nrx) {
@@ -127,7 +114,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	//val inverse3 = Module(new Mat3Inverse())  // temporarily removed to speed up compilation
 	val inverse4 = Module(new Mat4Inverse())
 
-	inverse4.io.rst := (counter < UInt(8))
+	inverse4.io.rst := (counter < UInt(6))
 
 	// connects the inverse2 IO to signals if using 2x2 system, 
 	// otherwise passes the IO bundle to the inverse4 unit
@@ -135,7 +122,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 		for (i <- 0 until 2) {
 			for (j <- 0 until 2) {
 				inverse2.io.matIn(i)(j) := kernel(i)(j)
-				inverse2.io.rst := (counter < UInt(8))
+				inverse2.io.rst := (counter < UInt(6))
 			}
 		}
 	} .otherwise {
@@ -216,21 +203,21 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 		}
 	} .elsewhen (process_output && ~done) {
 		io.toMatEngine.matrixIn := inverse
-		when (counter === UInt(31)) {
+		when (counter === UInt(26)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(0)
 			}
-		} .elsewhen (counter === UInt(32)) {
+		} .elsewhen (counter === UInt(27)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(1)
 				result(i)(0) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(33)) {
+		} .elsewhen (counter === UInt(28)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(2)
 				result(i)(1) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(34)) {
+		} .elsewhen (counter === UInt(29)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(3)
 				result(i)(2) := io.toMatEngine.result(i)
