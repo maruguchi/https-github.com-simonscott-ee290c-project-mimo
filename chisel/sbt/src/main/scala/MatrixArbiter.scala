@@ -52,9 +52,9 @@ class MatrixArbiter(implicit params: LMSParams) extends Module
         io.toMatrixEngine.vectorIn := io.toAdaptiveDecoder.vectorIn
     }
     
-    io.toChannelEstimator.result := Mux(io.reqChannelEstimator, io.toMatrixEngine.result, Bits(0, width=params.max_ntx_nrx*2*params.fix_pt_wd))
-    io.toInitializeWeights.result := Mux(io.reqInitializeWeights, io.toMatrixEngine.result, Bits(0, width=params.max_ntx_nrx*2*params.fix_pt_wd))
-    io.toAdaptiveDecoder.result := Mux(io.reqAdaptiveDecoder, io.toMatrixEngine.result, Bits(0, width=params.max_ntx_nrx*2*params.fix_pt_wd))
+    io.toChannelEstimator.result <> io.toMatrixEngine.result
+    io.toInitializeWeights.result <> io.toMatrixEngine.result
+    io.toAdaptiveDecoder.result <> io.toMatrixEngine.result
 }
 
 

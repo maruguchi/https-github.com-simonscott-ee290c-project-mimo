@@ -5,6 +5,7 @@ import Node._
 import scala.collection.mutable.HashMap
 import scala.math._
 import LMSConstants._
+import ComplexMathFunctions._
 
 
 // Define the top-level I/O interface for the LMS Decoder
@@ -80,17 +81,18 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
         }
     }
 
+    val data_h2d_fv = vecToBits(io.data_h2d.bits, params.max_ntx_nrx, params.samp_wd)
+
     // Wire up the training sequence memory
     when(train_mem_we) {
-        train_mem( train_mem_address ) := io.data_h2d.bits.toBits
+        train_mem( train_mem_address ) := data_h2d_fv
     }
 
     // Wire up the RX data queue
-    rx_data_queue.io.enq.bits <> io.data_h2d.bits.toBits
+    rx_data_queue.io.enq.bits := data_h2d_fv
     rx_data_queue.io.enq.valid := rx_data_queue_we
     io.data_h2d.ready := rx_data_queue.io.enq.ready
-    val rx_data_queue_vecOut = Vec.fill(params.max_ntx_nrx){
-                                new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}.fromBits(rx_data_queue.io.deq.bits)
+    val rx_data_queue_vecOut =  bitsToVec(rx_data_queue.io.deq.bits, params.max_ntx_nrx, params.samp_wd, params.samp_exp)
 
     // Wire up the Decoded Data Memory
     io.data_d2h.bits := Vec.fill(params.max_ntx_nrx){UInt(width = params.symbol_wd)}.fromBits(decoded_data_queue.io.deq.bits)
@@ -198,15 +200,21 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 	channelEstimator.io.start               := channelEstimator_en
 	channelEstimator.io.rst                 := channelEstimator_rst
 	channelEstimator_done                   := channelEstimator.io.done
-    val trainMemOutBits                     = train_mem( channelEstimator.io.trainAddress )
-	channelEstimator.io.trainSequence       := Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.samp_wd, e=params.samp_exp)}.fromBits(trainMemOutBits)
-	channelEstimator.io.dataIn.bits         := rx_data_queue_vecOut
+    channelEstimator.io.Nant                := ntx
 	channelEstimator.io.dataIn.valid        := rx_data_queue.io.deq.valid
     matrixArbiter.io.reqChannelEstimator    := channelEstimator_en & (~channelEstimator_done)
 	matrixArbiter.io.toChannelEstimator     <> channelEstimator.io.toMatEngine
 
+    val trainMemOut                         = bitsToVec(train_mem( channelEstimator.io.trainAddress ), params.max_ntx_nrx, params.samp_wd, params.samp_exp)
+    for(i <- 0 until params.max_ntx_nrx) {
+	    channelEstimator.io.trainSequence(i).real := trainMemOut(i).real
+	    channelEstimator.io.trainSequence(i).imag := trainMemOut(i).imag
+	    channelEstimator.io.dataIn.bits(i).real   := rx_data_queue_vecOut(i).real
+	    channelEstimator.io.dataIn.bits(i).imag   := rx_data_queue_vecOut(i).imag
+    }
+
     // Initialize weights
-    initializeWeights.io.channelMatrix      := channelEstimator.io.channelOut
+    initializeWeights.io.channelMatrix      <> channelEstimator.io.channelOut
     initializeWeights.io.snr                := snr
     initializeWeights.io.Nant               := nrx
     initializeWeights.io.start              := initializeWeights_en    
@@ -216,7 +224,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     matrixArbiter.io.reqInitializeWeights   := initializeWeights_en & (~initializeWeights_done)
     
     // Adaptive decoder
-    adaptiveDecoder.io.wSeed                := initializeWeights.io.initialW
+    adaptiveDecoder.io.wSeed                <> initializeWeights.io.initialW
     adaptiveDecoder.io.samples.bits         := rx_data_queue_vecOut
     adaptiveDecoder.io.samples.valid        := rx_data_queue.io.deq.valid
     decoded_data_queue.io.enq.bits          := adaptiveDecoder.io.decodedData.bits.toBits

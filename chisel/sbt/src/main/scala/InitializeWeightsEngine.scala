@@ -77,7 +77,7 @@ for (t <- 0 until 1)
 
 	poke(c.io.rst, 0)
 	poke(c.io.start, 1)
-	poke(c.io.Nant, 3)
+	poke(c.io.Nant, 2)
 	poke(c.io.snr, snr)
 
 	for (i <- 0 until 4) {
@@ -87,7 +87,7 @@ for (t <- 0 until 1)
 		}
 	}
 
-	step(26)
+	step(36)
 	peek(c.initializer.inverse4.io.rst)
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {

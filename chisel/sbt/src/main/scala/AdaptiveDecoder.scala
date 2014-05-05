@@ -140,8 +140,8 @@ class AdaptiveDecoder(implicit params: LMSParams) extends Module
     // ****** Hardware to adapt the W matrix ******
 
     // Create lookup table to store the ideal values for each symbol
-    val symbol_table_r = Array(1.0, -1.0, -1.0, 1.0)
-    val symbol_table_i = Array(1.0, 1.0, -1.0, -1.0)
+    val symbol_table_r = Array(0.707, -0.707, -0.707, 0.707)
+    val symbol_table_i = Array(0.707, 0.707, -0.707, -0.707)
     val symbol_table = Vec.fill(params.max_ntx_nrx){new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}
     for(i <- 0 until params.max_ntx_nrx)
     {

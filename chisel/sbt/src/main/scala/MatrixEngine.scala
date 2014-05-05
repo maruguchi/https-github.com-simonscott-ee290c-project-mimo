@@ -179,6 +179,32 @@ object ComplexMathFunctions
         samp = if(samp < 0) ( pow(2, samp_bit_wd).toInt + samp ) else samp
         return samp
     }
+
+    // Flattens a vector of complex numbers to bits
+    def vecToBits(v: Vec[ComplexSFix], n: Int, w: Int): Bits =
+    {
+        val fv = Vec.fill(n){ UInt(width=2*w) }
+
+        for(i <- 0 until n)
+            fv(i) := Cat(v(i).imag.raw, v(i).real.raw)
+
+        return fv.toBits
+    }
+
+    // Converts a long bit word into a vector of complex numbers
+    def bitsToVec(b: Bits, n: Int, w: Int, e: Int) : Vec[ComplexSFix] = 
+    {
+        val v = Vec.fill(n){new ComplexSFix(w, e)}
+
+        for(i <- 0 until n) {
+            val idx = i*2*w
+            v(i).real.raw := b(idx + w - 1, idx)
+            v(i).imag.raw := b(idx + 2*w - 1, idx + w)
+        }
+
+        return v            
+    }
+
 }
 
 

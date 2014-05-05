@@ -15,6 +15,8 @@ class Mat4InverseIO(implicit params: LMSParams) extends Bundle()
 	val matOut = Vec.fill(4){ Vec.fill(4) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
 
 	val rst = Bool().asInput
+
+	val probe = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}}
 }
 
 class Mat4Inverse (implicit params:LMSParams) extends Module
@@ -23,6 +25,8 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 
 	// local matrix inversion hardware (reused)
 	val mat2inverse = Module(new Mat2Inverse())
+
+	val inverse_done = mat2inverse.io.done
 
 	// block matrices in input
 	val A = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
@@ -53,8 +57,10 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 	schur := mat2subtract( D, mat2multiply(CAinv,B) )
 	AinvBschurInv := mat2multiply( AinvB, schurInv )
 
+	io.probe := schurInv
+
 	// keeps track of which step, sends appropriate matrices to inversion block
-	val step = Reg(init = UInt(0,2))
+	val step = Reg(init = UInt(0,5))
 
 	when (io.rst) {
 		step := UInt(0)
@@ -67,13 +73,24 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 //		schur := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
 //		schurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
 //		AinvBschurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-	} .elsewhen (step < UInt(2,2)) {
+	} .elsewhen (step < UInt(2,5)) {
+		when (step === UInt(0)) {
+			step := UInt(1)
+		}
+		mat2inverse.io.rst := (step === UInt(0))
 		mat2inverse.io.matIn := A
-		Ainv := mat2inverse.io.matOut
-		step := step + UInt(1)
+		when (inverse_done) {
+			mat2inverse.io.rst := Bool(true)
+			Ainv := mat2inverse.io.matOut
+			step := step + UInt(1)
+		}
 	} .otherwise {
+		step := step + UInt(1)
+		mat2inverse.io.rst := step === UInt(4)
 		mat2inverse.io.matIn := schur
-		schurInv := mat2inverse.io.matOut
+		when (inverse_done) {
+			schurInv := mat2inverse.io.matOut
+		}
 	}
 
 	// computes block matrices in inverse
@@ -106,6 +123,7 @@ val matIn_i = Array( Array(1.1,0.7,2.1,1), Array(-1.1,1.1,0.3,1), Array(-0.3,0.5
 
 for (t <- 0 until 1)
     {
+	poke(c.io.rst,0)
         // Apply inputs
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {
@@ -115,7 +133,20 @@ for (t <- 0 until 1)
 	}
 
         // Clock the module
-        step(8)
+        step(10)
+	peek(c.mat2inverse.io.rst)
+	step(1)
+	peek(c.mat2inverse.io.rst)
+	step(1)
+	peek(c.mat2inverse.io.rst)
+	step(7)
+	for (i <- 0 until 2) {
+		for (j <- 0 until 2) {
+			println( conv_fp_to_double(peek(c.io.probe(i)(j).real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
+			println( conv_fp_to_double(peek(c.io.probe(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
+		}
+	}
+
 
 	println()
 	println()
@@ -125,5 +156,6 @@ for (t <- 0 until 1)
 			println( conv_fp_to_double(peek(c.io.matOut(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
 		}
 	}	
+
     }
 }

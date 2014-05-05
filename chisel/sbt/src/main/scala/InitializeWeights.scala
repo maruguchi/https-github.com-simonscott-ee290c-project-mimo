@@ -48,7 +48,7 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 }
 
 
-// Module to estimate the channel matrix H
+// Module to calculate the initial seed for the receive filter W
 class InitializeWeights(implicit params: LMSParams) extends Module
 {
 	val io = new InitializeWeightsIO()
@@ -71,12 +71,12 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val kernel = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp) } }
 
-	val counter = Reg(init = UInt(0,5))
+	val counter = Reg(init = UInt(0,6))
 	val process_inputs = io.start && (~io.rst) && (counter < UInt(6))
 	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(19))
 	val process_output = io.start && (~io.rst) && (counter > UInt(18))
 
-	val done = process_output && (counter === UInt(30))
+	val done = process_output && (counter >= UInt(36))
 	
 	when ((process_inputs || process_kernel || process_output) && ~done) {
 		counter := counter + UInt(1)
@@ -122,6 +122,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val inverse4 = Module(new Mat4Inverse())
 
 	inverse4.io.rst := (counter < UInt(8))
+	inverse2.io.rst := (counter < UInt(8))
 
 	for (i <- 0 until 2) {
 		for (j <- 0 until 2) {
@@ -201,21 +202,21 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 		}
 	} .elsewhen (process_output && ~done) {
 		io.toMatEngine.matrixIn := inverse
-		when (counter === UInt(21)) {
+		when (counter === UInt(31)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(0)
 			}
-		} .elsewhen (counter === UInt(22)) {
+		} .elsewhen (counter === UInt(32)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(1)
 				result(i)(0) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(23)) {
+		} .elsewhen (counter === UInt(33)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(2)
 				result(i)(1) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(24)) {
+		} .elsewhen (counter === UInt(34)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(3)
 				result(i)(2) := io.toMatEngine.result(i)
