@@ -118,7 +118,7 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	}
 
 	val inverse2 = Module(new Mat2Inverse())
-	val inverse3 = Module(new Mat3Inverse())
+	//val inverse3 = Module(new Mat3Inverse())  // temporarily removed to speed up compilation
 	val inverse4 = Module(new Mat4Inverse())
 
 	inverse4.io.rst := (counter < UInt(8))
@@ -129,11 +129,12 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 			inverse2.io.matIn(i)(j) := kernel(i)(j)
 		}
 	}
-	for (i <- 0 until 3) {
+/*	for (i <- 0 until 3) {
 		for (j <- 0 until 3) {
 			inverse3.io.matIn(i)(j) := kernel(i)(j)
 		}
 	}
+*/
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {
 			inverse4.io.matIn(i)(j) := kernel(i)(j)
@@ -150,12 +151,14 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 				inverse(i)(j) := inverse2.io.matOut(i)(j)
 			}
 		}
+/*
 	} .elsewhen (io.Nant === UInt(3)) {
 		for (i <- 0 until 3) {
 			for (j <- 0 until 3) {
 				inverse(i)(j) := inverse3.io.matOut(i)(j)
 			}
 		}
+*/
 	} .elsewhen (io.Nant === UInt(4)) {
 		for (i <- 0 until 4) {
 			for (j <- 0 until 4) {

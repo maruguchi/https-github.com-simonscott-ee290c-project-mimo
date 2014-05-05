@@ -19,7 +19,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Form for training memory: [cycle=Int],[address=Int],[train_ant0_real=Float],[train_ant0_imag=Float],[train_ant1_real=Float], etc
     // Example: 6,20,1.26,-2.71,0.51
     val configTrainBusCommands = new HashMap[BigInt,Array[Double]]()
-    for (line <- scala.io.Source.fromFile("../test/snr_50dB/configTrainBusCmds.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_27dB/configTrainBusCmds.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         configTrainBusCommands(command(0).toInt) = command.drop(1)
     }
@@ -31,7 +31,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 10,1.26,-2.71,0.51,...
     val receiveDataBusCommands = new ArrayBuffer[Array[Double]]
-    for (line <- scala.io.Source.fromFile("../test/snr_50dB/receiveData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_27dB/receiveData.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         receiveDataBusCommands += command
     }
@@ -43,7 +43,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 1,0,2,3
     val decodedDataBusCommands = new ArrayBuffer[Array[Int]]
-    for (line <- scala.io.Source.fromFile("../test/snr_50dB/decodedData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/snr_27dB/decodedData.txt").getLines()) {
         val command = line.split(",").map(_.toInt)
         decodedDataBusCommands += command
     }
@@ -72,14 +72,14 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             val im = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
             println(s"[$re , $im]")
         }
-
+*/
         // Samples going into adaptive decoder
         for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.samples.bits(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
-            val im = conv_fp_to_double(peek(c.adaptiveDecoder.io.samples.bits(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            val re = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
-*/
+
         // First row of inverse(H x H_hermitian + 1/SNR matrix)
         for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.initializeWeights.inverse(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
@@ -89,20 +89,11 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
 
         // First row of W seed matrix going into adaptive decoder
         for(i <- 0 until c.params.max_ntx_nrx) {
-            val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.wSeed(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
-            val im = conv_fp_to_double(peek(c.adaptiveDecoder.io.wSeed(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val re = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
 
-/*        val chan_est_raw = peek(c.channelEstimator.io.channelOut)
-        for(i <- 0 until 4) {
-            for(j <- 0 until 8) {
-                val d = conv_fp_to_double(chan_est_raw(i*8 + j), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
-                print(s"$d, ")
-            }
-            println(" ")
-        }
-*/        
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {
