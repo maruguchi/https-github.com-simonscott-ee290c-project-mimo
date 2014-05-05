@@ -1,7 +1,7 @@
 channel_model = 'B';
 decoder_type = 'LMS_seeded';
 plotEnable = 0;
-numAvg = 10;
+numAvg = 1;
 mu_LMS = 0.01;
 mu_LMS_seeded = 1e-3;
 

@@ -53,7 +53,7 @@ receive_data_format = [receive_data_format '\n'];
 fprintf(data_file_id, receive_data_format, receive_data_payload);
 
 
-symbols_payload = zeros(1,length(rx_data(:)));
+symbols_payload = zeros(1,length(symbols(:)));
 for i = 1:size(symbols,2)
     data = symbols(:,i).';
     data0 = 0*((real(data)>0) & (imag(data)>0));
