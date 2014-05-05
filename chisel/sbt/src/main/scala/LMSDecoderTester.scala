@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 23
+    val cycles = 23 // 23
 
     var num_reads = 0
     var num_writes = 0
@@ -63,10 +63,30 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
         // Debug output for this cycle
         peek(c.state)
         peekAt(c.train_mem, 0)
-        peek(c.channelEstimator.io.trainSequence)
         peek(c.channelEstimator.io.trainAddress)
 
-        val chan_est_raw = peek(c.channelEstimator.io.channelOut)
+        // Training sequence going into channel estimator
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            val im = conv_fp_to_double(peek(c.channelEstimator.io.trainSequence(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            println(s"[$re , $im]")
+        }
+
+        // Samples going into channel estimator
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.channelEstimator.io.dataIn.bits(i).real.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            val im = conv_fp_to_double(peek(c.channelEstimator.io.dataIn.bits(i).imag.raw), c.params.samp_frac_bits, c.params.samp_wd)
+            println(s"[$re , $im]")
+        }
+
+        // First row of matrix coming out of channel estimator
+        for(i <- 0 until c.params.max_ntx_nrx) {
+            val re = conv_fp_to_double(peek(c.channelEstimator.io.channelOut(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            val im = conv_fp_to_double(peek(c.channelEstimator.io.channelOut(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
+            println(s"[$re , $im]")
+        }
+
+/*        val chan_est_raw = peek(c.channelEstimator.io.channelOut)
         for(i <- 0 until 4) {
             for(j <- 0 until 8) {
                 val d = conv_fp_to_double(chan_est_raw(i*8 + j), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
@@ -74,15 +94,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
             }
             println(" ")
         }
-        
-        val chan_est_in_raw = peek(c.channelEstimator.io.dataIn.bits)
-        for(i <- 0 until 8) {
-            val d = conv_fp_to_double(chan_est_in_raw(i), c.params.samp_frac_bits, c.params.samp_wd)
-            print(s"$d, ")
-        }
-        println(" ")
-        
-
+*/        
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {

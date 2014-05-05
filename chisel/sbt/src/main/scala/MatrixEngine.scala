@@ -181,7 +181,7 @@ object ComplexMathFunctions
     }
 
     // Flattens a vector of complex numbers to bits
-    def flattenVec(v: Vec[ComplexSFix], n: Int, w: Int): Bits =
+    def vecToBits(v: Vec[ComplexSFix], n: Int, w: Int): Bits =
     {
         val fv = Vec.fill(n){ UInt(width=2*w) }
 
@@ -190,6 +190,21 @@ object ComplexMathFunctions
 
         return fv.toBits
     }
+
+    // Converts a long bit word into a vector of complex numbers
+    def bitsToVec(b: Bits, n: Int, w: Int, e: Int) : Vec[ComplexSFix] = 
+    {
+        val v = Vec.fill(n){new ComplexSFix(w, e)}
+
+        for(i <- 0 until n) {
+            val idx = i*2*w
+            v(i).real.raw := b(idx + w - 1, idx)
+            v(i).imag.raw := b(idx + 2*w - 1, idx + w)
+        }
+
+        return v            
+    }
+
 }
 
 
