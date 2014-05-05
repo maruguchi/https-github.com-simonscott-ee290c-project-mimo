@@ -99,9 +99,5 @@ if(plotEnable == 1)
     stem(sum(abs(decodedData-transmitted)/2,1));
 end
 
-generate_chisel_config_files(Nrx,Ntx,SNR_dB,trainIn,[trainOut rx],transmitted)
-size(transmitted)
-size([trainOut rx])
-size(trainOut)
-size(rx)
+generate_chisel_config_files(Nrx,Ntx,SNR_dB,trainIn,[trainOut.' rx],transmitted)
 end
