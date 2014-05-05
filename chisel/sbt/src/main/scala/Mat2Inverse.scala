@@ -10,11 +10,16 @@ import FixedPoint._
 
 class Mat2InverseIO(implicit params: LMSParams) extends Bundle()
 {
+	// input matrix to be inverted
 	val matIn = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput } }
 
+	// output matrix after inversion
 	val matOut = Vec.fill(2){ Vec.fill(2) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
 
+	// resets internal counter (state machine) to zero
 	val rst = Bool().asInput
+
+	// flag for when it is finished
 	val done = Bool().asOutput
 }
 
@@ -22,6 +27,7 @@ class Mat2Inverse (implicit params:LMSParams) extends Module
 {
 	val io = new Mat2InverseIO()
 
+	// fixed point complex division module which is shared
 	val divider = Module(new FixDivision())
 
 	// determinant
@@ -31,18 +37,22 @@ class Mat2Inverse (implicit params:LMSParams) extends Module
 	// value of zero for negation
 	val zero = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
 
+	// stores outputs
 	val out00 = Reg(init = zero)
 	val out01 = Reg(init = zero)
 	val out10 = Reg(init = zero)
 	val out11 = Reg(init = zero)
 
+	// internal state counter and control signals
 	val counter = Reg(init = UInt(0,3))
 	val process_data = (counter < UInt(6)) && (~io.rst)
 	val done = (counter === UInt(6))
 
+	// negation of off-diagonal matrix elements
 	val x1 = complex_sub(zero, io.matIn(0)(1))
 	val x2 = complex_sub(zero, io.matIn(1)(0))
 
+	// reset and normal operation commands
 	when (io.rst) {
 		counter := UInt(0)
 	}
@@ -50,8 +60,12 @@ class Mat2Inverse (implicit params:LMSParams) extends Module
 		counter := counter + UInt(1)
 	}
 
+	// the denominator of the division is always the determinant
 	divider.io.den := det
 
+	// sequentially applies the data and stores the result in the correct register. 
+	// Total latency is 6 cycles (1 for determinant, 4 for each of the elements, 
+	// 1 for latency of divider)
 	when (process_data && ~done && counter === UInt(1)) {
 		divider.io.num := io.matIn(1)(1)
 	} .elsewhen (process_data && ~done && counter === UInt(2)) {

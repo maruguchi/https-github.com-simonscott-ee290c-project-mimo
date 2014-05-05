@@ -26,7 +26,7 @@ class InitializeWeightsEngineIO(implicit params: LMSParams) extends Bundle()
 	val Nant = UInt(width = REG_WD).asInput
 
 	// SNR (linear)
-	val snr = UInt(width=REG_WD).asInput
+	val snr_inv = SFix(width=params.fix_pt_wd, exp=params.fix_pt_exp).asInput
 
 	// output matrix with initial W seed
 	val initialW = Vec.fill(params.max_ntx_nrx){ 
@@ -55,7 +55,7 @@ class InitializeWeightsEngine(implicit params: LMSParams) extends Module
     initializer.io.channelMatrix := io.channelMatrix
     initializer.io.start := io.start
     initializer.io.rst := io.rst
-    initializer.io.snr := io.snr
+    initializer.io.snr_inv := io.snr_inv
     initializer.io.Nant := io.Nant
     io.initialW := initializer.io.initialW
     io.done := initializer.io.done
@@ -69,7 +69,7 @@ class InitializeWeightsEngineTests(c: InitializeWeightsEngine, params: LMSParams
 val matIn_r = Array( Array(1.3,-2.1,1.2,1), Array(0.3,-0.5,-0.4,-1), Array(0.2,0.5,-0.9,1), Array(0.1,0.95,-0.3,-1))
 val matIn_i = Array( Array(1.1,0.7,2.1,1), Array(-1.1,1.1,0.3,1), Array(-0.3,0.5,-0.7,1), Array(-0.3,0.5,-0.7,1))
 
-val snr = 20
+val snr_inv = 0.05
 
 // Apply inputs
 for (t <- 0 until 1)
@@ -77,8 +77,8 @@ for (t <- 0 until 1)
 
 	poke(c.io.rst, 0)
 	poke(c.io.start, 1)
-	poke(c.io.Nant, 2)
-	poke(c.io.snr, snr)
+	poke(c.io.Nant, 4)
+	poke(c.io.snr_inv.raw, conv_double_to_fp(snr_inv, params.fix_pt_frac_bits, params.fix_pt_wd))
 
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {

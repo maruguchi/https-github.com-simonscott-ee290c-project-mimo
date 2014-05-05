@@ -56,7 +56,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
     val nrx = Reg(init = UInt(0, width = REG_WD))
     val train_len = Reg(init = UInt(0, width = REG_WD))
     val modulation = Reg(init = UInt(0, width = REG_WD))
-    val snr = Reg(init = UInt(0, width = REG_WD))
+    val snr_inv = Reg(init = UInt(0, width = REG_WD))
     val start = Reg(init = Bool(false))
 
     // Wire up the write interface to the registers
@@ -74,7 +74,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
             modulation := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
         when(config_mem_address === UInt(4)) {
-            snr := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
+            snr_inv := io.data_h2d.bits(0).real.raw(REG_WD-1, 0)
         }
         when(config_mem_address === UInt(5) && (state === st_RESET || state === st_DECODE)) {
             start := io.data_h2d.bits(0).real.raw(0)
@@ -215,7 +215,7 @@ class LMSDecoder(paramsIn: LMSParams) extends Module
 
     // Initialize weights
     initializeWeights.io.channelMatrix      <> channelEstimator.io.channelOut
-    initializeWeights.io.snr                := snr
+    initializeWeights.io.snr_inv            := snr_inv
     initializeWeights.io.Nant               := nrx
     initializeWeights.io.start              := initializeWeights_en    
     initializeWeights.io.rst                := initializeWeights_rst    
