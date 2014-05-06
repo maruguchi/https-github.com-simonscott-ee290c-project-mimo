@@ -8,12 +8,11 @@ import scala.math._
 
 
 // High-level compilation parameters
-// TODO: this must be parameterized based on max packet len, etc
-case class LMSParams()
+case class LMSParams(fp_bit_wd: Int, fp_exp: Int, m_ntx: Int, m_nrx: Int)
 {
     // Simulation parameters
-    val max_ntx = 4
-    val max_nrx = 4
+    val max_ntx = m_ntx
+    val max_nrx = m_nrx
     val max_ntx_nrx = max(max_ntx, max_nrx)
     val max_train_len = 4
     val fifo_len = 16
@@ -31,8 +30,8 @@ case class LMSParams()
 
     val symbol_wd = log2Up(4)
 
-    val fix_pt_wd = 24       // was 20 and 8
-    val fix_pt_exp = 12      // 8 bits int, 12 bits of decimal = 0.0002 resolution
+    val fix_pt_wd = fp_bit_wd       // works well at 24 and 12
+    val fix_pt_exp = fp_exp         // 8 bits int, 12 bits of decimal = 0.0002 resolution
     val fix_pt_frac_bits = fix_pt_wd - fix_pt_exp
 }
 
