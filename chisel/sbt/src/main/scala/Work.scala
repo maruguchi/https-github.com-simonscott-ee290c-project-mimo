@@ -51,7 +51,7 @@ object Work {
                     c => new Mat3InverseTests(c, params) }
 
             case "Mat4Inverse" => 
-                chiselMainTest( args.slice(2, args.length), () => Module(new Mat4Inverse()(params)) ) {
+                chiselMainTest( args.slice(2, args.length), () => Module(new Mat4InverseEngine()(params)) ) {
                     c => new Mat4InverseTests(c, params) }
 
             case "InitializeWeightsEngine" => 

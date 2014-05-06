@@ -40,11 +40,6 @@ class InitializeWeightsIO(implicit params: LMSParams) extends Bundle()
 
 	// done flag
 	val done = Bool().asOutput
-
-	val probe = Vec.fill(params.max_ntx_nrx){ 
-		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp).asOutput } }
-
-	val probe_snr = SFix(width=params.fix_pt_wd, exp = REG_WD+1).asOutput
 }
 
 
@@ -74,10 +69,10 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	// internal state counter and control signals
 	val counter = Reg(init = UInt(0,6))
 	val process_inputs = io.start && (~io.rst) && (counter < UInt(6))
-	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(19))
-	val process_output = io.start && (~io.rst) && (counter > UInt(18))
+	val process_kernel = io.start && (~io.rst) && (counter > UInt(5)) && (counter < UInt(38))
+	val process_output = io.start && (~io.rst) && (counter > UInt(37))
 
-	val done = process_output && (counter >= UInt(31))
+	val done = process_output && (counter >= UInt(44))
 
 	when ((process_inputs || process_kernel || process_output) && ~done) {
 		counter := counter + UInt(1)
@@ -171,8 +166,6 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 	val result = Vec.fill(params.max_ntx_nrx){ 
 		Vec.fill(params.max_ntx_nrx) {Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
 
-	io.probe := result
-
 	// controls sending of the appropriate matrices to the matrixEngine for multiplication
 	when (process_inputs) {
 		io.toMatEngine.matrixIn := channelMatrixHerm
@@ -201,23 +194,27 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 				product(i)(3) := io.toMatEngine.result(i)
 			}
 		}
+	} .elsewhen (process_kernel) {
+		io.toMatEngine.matrixIn := inverse4.io.toMatEngine.matrixIn
+		io.toMatEngine.vectorIn := inverse4.io.toMatEngine.vectorIn
+		inverse4.io.toMatEngine.result := io.toMatEngine.result
 	} .elsewhen (process_output && ~done) {
 		io.toMatEngine.matrixIn := inverse
-		when (counter === UInt(26)) {
+		when (counter === UInt(38)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(0)
 			}
-		} .elsewhen (counter === UInt(27)) {
+		} .elsewhen (counter === UInt(39)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(1)
 				result(i)(0) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(28)) {
+		} .elsewhen (counter === UInt(40)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(2)
 				result(i)(1) := io.toMatEngine.result(i)
 			}
-		} .elsewhen (counter === UInt(29)) {
+		} .elsewhen (counter === UInt(41)) {
 			for (i <- 0 until params.max_ntx_nrx) {
 				io.toMatEngine.vectorIn(i) := channelMatrixHerm(i)(3)
 				result(i)(2) := io.toMatEngine.result(i)
@@ -232,6 +229,8 @@ class InitializeWeights(implicit params: LMSParams) extends Module
 		io.toMatEngine.matrixIn := Vec.fill(params.max_ntx_nrx){ 
 			Vec.fill(params.max_ntx_nrx){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0) } }
 		io.toMatEngine.vectorIn := Vec.fill(params.max_ntx_nrx){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}
+
+		inverse4.io.toMatEngine.result := Vec.fill(params.max_ntx_nrx){makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}
 	}
 
 	io.initialW := result

@@ -34,11 +34,6 @@ class InitializeWeightsEngineIO(implicit params: LMSParams) extends Bundle()
 
 	// output flag; goes high when done processing
 	val done = Bool().asOutput
-
-	val probe = Vec.fill(params.max_ntx_nrx){ 
-		Vec.fill(params.max_ntx_nrx) {new ComplexSFix(w=params.fix_pt_wd, e = params.fix_pt_exp).asOutput } }
-
-	val probe_snr = SFix(width=params.fix_pt_wd, exp = REG_WD+1).asOutput
 }
 
 
@@ -48,9 +43,6 @@ class InitializeWeightsEngine(implicit params: LMSParams) extends Module
 
     val initializer = Module(new InitializeWeights())
     val engine = Module(new MatrixEngine())
-
-    io.probe := initializer.io.probe
-    io.probe_snr := initializer.io.probe_snr
 
     initializer.io.channelMatrix := io.channelMatrix
     initializer.io.start := io.start
@@ -87,12 +79,12 @@ for (t <- 0 until 1)
 		}
 	}
 
-	step(32)
+	step(44)
 	peek(c.initializer.inverse4.io.rst)
 	for (i <- 0 until 4) {
 		for (j <- 0 until 4) {
-			println( conv_fp_to_double(peek(c.io.probe(i)(j).real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-			println( conv_fp_to_double(peek(c.io.probe(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
+			println( conv_fp_to_double(peek(c.io.initialW(i)(j).real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
+			println( conv_fp_to_double(peek(c.io.initialW(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
 
 //initializer.inverse4.io.matOut
 //io.probe
