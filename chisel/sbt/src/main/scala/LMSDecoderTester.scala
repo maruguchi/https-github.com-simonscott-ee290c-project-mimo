@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 1000
+    val cycles = 2000
 
     // Keep track of how many symbols read and written
     var num_reads = 0
