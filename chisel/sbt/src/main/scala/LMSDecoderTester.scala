@@ -7,7 +7,7 @@ import scala.math._
 import LMSConstants._
 import ComplexMathFunctions._
 
-class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
+class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
 {
 
     //****** FILE PARSING ******
@@ -19,7 +19,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Form for training memory: [cycle=Int],[address=Int],[train_ant0_real=Float],[train_ant0_imag=Float],[train_ant1_real=Float], etc
     // Example: 6,20,1.26,-2.71,0.51
     val configTrainBusCommands = new HashMap[BigInt,Array[Double]]()
-    for (line <- scala.io.Source.fromFile("../test/snr_27dB/configTrainBusCmds.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/" + testDir + "/configTrainBusCmds.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         configTrainBusCommands(command(0).toInt) = command.drop(1)
     }
@@ -31,7 +31,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 10,1.26,-2.71,0.51,...
     val receiveDataBusCommands = new ArrayBuffer[Array[Double]]
-    for (line <- scala.io.Source.fromFile("../test/snr_27dB/receiveData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/" + testDir + "/receiveData.txt").getLines()) {
         val command = line.split(",").map(_.toDouble)
         receiveDataBusCommands += command
     }
@@ -43,7 +43,7 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     // Example:
     // 1,0,2,3
     val decodedDataBusCommands = new ArrayBuffer[Array[Int]]
-    for (line <- scala.io.Source.fromFile("../test/snr_27dB/decodedData.txt").getLines()) {
+    for (line <- scala.io.Source.fromFile("../test/" + testDir + "/decodedData.txt").getLines()) {
         val command = line.split(",").map(_.toInt)
         decodedDataBusCommands += command
     }
@@ -188,4 +188,9 @@ class LMSDecoderTester(c: LMSDecoder) extends Tester(c)
     val ber = num_sym_errors.toDouble / (num_reads * 4.0)
     println("---------------------------------------------------------")
     println(s"Test complete. ${num_sym_errors} out of ${num_reads*4} symbols incorrect. BER = $ber")
+
+    // Append result to a file
+    val outFile = new java.io.FileWriter("../test/result.txt", true)
+    outFile.write(c.params.fix_pt_wd.toString + ", " + c.params.fix_pt_exp.toString + ", " + c.params.max_ntx_nrx + ", " + testDir.substring(4,6) + ", " + ber.toString + "\n")
+    outFile.close
 }
