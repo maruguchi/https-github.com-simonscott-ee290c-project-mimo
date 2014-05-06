@@ -12,7 +12,7 @@ SNR	SER
 
 
 
-Adaptive
+Adaptive (channel model B, 0.1 doppler)
 SNR	BER
 30	5.56e-6
 25	0.0013
