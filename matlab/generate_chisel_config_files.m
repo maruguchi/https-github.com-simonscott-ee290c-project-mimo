@@ -1,10 +1,10 @@
 function [] = generate_chisel_config_files(Nrx, Ntx, SNR_db, trainIn, rx_data, symbols)
 
-commands_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_0db\configTrainBusCmds.txt';
+commands_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_adaptive_0db\configTrainBusCmds.txt';
 commands_file_id = fopen(commands_file,'wt');
-data_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_0db\receiveData.txt';
+data_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_adaptive_0db\receiveData.txt';
 data_file_id = fopen(data_file,'wt');
-symbols_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_0db\decodedData.txt';
+symbols_file = 'C:\Users\apuglielli\Documents\MATLAB\EE290C\matlab\chisel_configs\snr_adaptive_0db\decodedData.txt';
 symbols_file_id = fopen(symbols_file,'wt');
 
 SNR_lin = 10^(SNR_db/10);

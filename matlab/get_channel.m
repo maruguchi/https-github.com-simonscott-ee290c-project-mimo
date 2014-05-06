@@ -64,7 +64,7 @@ S = RandStream('swb2712', 'Seed', 12345); % Set a local random number stream
 M = 2;                      % Modulation order
 hModem = modem.pskmod(M);   % 2-PSK modulator object
 
-Rsym = 20;                % Input symbol rate
+Rsym = 10e3;                % Input symbol rate
 Rbit = Rsym * log2(M);      % Input bit rate
 Nos  = 1;                   % Oversampling factor
 Rs   = Rbit * Nos;          % Input sample rate 
