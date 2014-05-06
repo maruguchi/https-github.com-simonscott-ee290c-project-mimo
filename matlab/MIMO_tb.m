@@ -12,14 +12,14 @@ else
 end
 
 % SNR_dB = linspace(0,30,11);
-SNR_dB = 27;
-
+SNR_dB = 0;
+H_input = do_not_erase;
 SER = zeros(numAvg,length(SNR_dB),numDecoders);
 
 for index = 1:length(SNR_dB)
     tic
     for avg = 1:numAvg
-        [dat, SER(avg,index, :)] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB(index), decoder_type, plotEnable, channel_model);
+        [dat, SER(avg,index, :)] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB(index), H_input, decoder_type, plotEnable, channel_model);
     end
     toc
 end

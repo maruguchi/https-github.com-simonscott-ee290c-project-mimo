@@ -1,4 +1,4 @@
-function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, decoder_type, plotEnable, channel_model)
+function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, H_input, decoder_type, plotEnable, channel_model)
 
 % Transmit parameters
 Ntx = 4;
@@ -25,11 +25,13 @@ transmitted = [training data];
 % mu=0 std_dev=1/sqrt(2), for both real and imag parts
 % Modeled version of H uses 802.11n channel model B
 global H;
-channel_type = 'random';
+channel_type = 'import';
 if strcmp(channel_type, 'random')
     H = 1/sqrt(2)*(randn(Nrx,Ntx) + 1j*randn(Nrx,Ntx));
 elseif strcmp(channel_type, 'modeled')
     [H, H_dynamic] = get_channel(Nrx, Ntx, doppler_f, channel_model);
+elseif strcmp(channel_type, 'import')
+    H = H_input;
 end
 
 % Add noise
