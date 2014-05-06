@@ -10,23 +10,28 @@ import FixedPoint._
 
 class Mat4InverseIO(implicit params: LMSParams) extends Bundle()
 {
+	// input matrix to be inverted
 	val matIn = Vec.fill(4){ Vec.fill(4) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asInput } }
 
+	// output matrix which is the inverse
 	val matOut = Vec.fill(4){ Vec.fill(4) {new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput } }
 
+	// resets internal counter (state machine) to zero
 	val rst = Bool().asInput
 
-	val probe = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp).asOutput}}
+	// IO buses to the inverse2 engine which this uses for computation
+	val mat2inverse = new Mat2InverseIO().flip()
+
+	// IO buses to matrix engine for matrix multiplications
+	val toMatEngine = new MatrixEngineIO().flip()
 }
 
 class Mat4Inverse (implicit params:LMSParams) extends Module
 {
 	val io = new Mat4InverseIO()
 
-	// local matrix inversion hardware (reused)
-	val mat2inverse = Module(new Mat2Inverse())
-
-	val inverse_done = mat2inverse.io.done
+	// from matrix inversion module in higher level module
+	val inverse_done = io.mat2inverse.done
 
 	// block matrices in input
 	val A = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
@@ -44,64 +49,240 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 		}
 	}
 
+	val zero = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)
+
 	// intermediate results
-	val Ainv = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)) } }
-	val CAinv = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0))}}
-	val AinvB = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0))}}
-	val schur = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0))}}
-	val schurInv = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0))}}
-	val AinvBschurInv = Vec.fill(2){ Vec.fill(2){ Reg(init = makeComplexSFix(w=params.fix_pt_wd, r=0, i=0))}}
-
-	CAinv := mat2multiply( C, Ainv )
-	AinvB := mat2multiply( Ainv, B )
-	schur := mat2subtract( D, mat2multiply(CAinv,B) )
-	AinvBschurInv := mat2multiply( AinvB, schurInv )
-
-	io.probe := schurInv
+	val Ainv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val CAinv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val CAinvB = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val AinvB = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val schur = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val schurInv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val AinvBschurInv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val schurInvCAinv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
+	val AinvBschurInvCAinv = Vec.fill(2){ Vec.fill(2){ Reg(init = zero) } }
 
 	// keeps track of which step, sends appropriate matrices to inversion block
 	val step = Reg(init = UInt(0,5))
+
+	// keeps track of matrix engine latency
+	val engine_counter = Reg(init = UInt(0,3))
 
 	when (io.rst) {
 		step := UInt(0)
 	}
 
-	when (io.rst) {
-//		Ainv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-//		CAinv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-//		AinvB := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-//		schur := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-//		schurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-//		AinvBschurInv := Vec.fill(2){ Vec.fill(2){ makeComplexSFix(w=params.fix_pt_wd, r=0, i=0)}}
-	} .elsewhen (step < UInt(2,5)) {
-		when (step === UInt(0)) {
-			step := UInt(1)
+	for (i <- 2 until params.max_ntx_nrx ) {
+		for (j <- 0 until params.max_ntx_nrx) {
+			io.toMatEngine.matrixIn(i)(j) := zero
 		}
-		mat2inverse.io.rst := (step === UInt(0))
-		mat2inverse.io.matIn := A
-		when (inverse_done) {
-			mat2inverse.io.rst := Bool(true)
-			Ainv := mat2inverse.io.matOut
-			step := step + UInt(1)
-		}
-	} .otherwise {
-		step := step + UInt(1)
-		mat2inverse.io.rst := step === UInt(4)
-		mat2inverse.io.matIn := schur
-		when (inverse_done) {
-			schurInv := mat2inverse.io.matOut
+		io.toMatEngine.vectorIn(i) := zero
+	}
+
+	for (i <- 0 until 2) {
+		for (j <- 2 until params.max_ntx_nrx) {
+			io.toMatEngine.matrixIn(i)(j) := zero
 		}
 	}
 
-	// computes block matrices in inverse
-	val Afinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
-	val Bfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
-	val Cfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
-	val Dfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp)}}
+	val x1 = mat2subtract( D, CAinvB )
 
-	Afinal := mat2add( Ainv, mat2multiply( AinvBschurInv, CAinv ) )
+	// kind of state machine controlling behavior of the module
+	when (step === UInt(0)) {
+		step := UInt(1)
+		io.mat2inverse.rst := Bool(true)
+	} .elsewhen (step === UInt(1)) {
+		io.mat2inverse.rst := Bool(false)
+		io.mat2inverse.matIn := A
+		when (inverse_done) {
+			io.mat2inverse.rst := Bool(true)
+			Ainv := io.mat2inverse.matOut
+			step := step + UInt(1)
+		}
+	} .elsewhen (step === UInt(2)) {
+		engine_counter := engine_counter + UInt(1)
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := C(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			io.toMatEngine.vectorIn(0) := Ainv(0)(0)
+			io.toMatEngine.vectorIn(1) := Ainv(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			io.toMatEngine.vectorIn(0) := Ainv(0)(1)
+			io.toMatEngine.vectorIn(1) := Ainv(1)(1)
+			CAinv(0)(0) := io.toMatEngine.result(0)
+			CAinv(1)(0) := io.toMatEngine.result(1)
+		} .otherwise {
+			CAinv(0)(1) := io.toMatEngine.result(0)
+			CAinv(1)(1) := io.toMatEngine.result(1)
+			engine_counter := UInt(0)
+			step := UInt(3)
+		}
+
+	} .elsewhen (step === UInt(3)) {
+		engine_counter := engine_counter + UInt(1)
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := CAinv(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			io.toMatEngine.vectorIn(0) := B(0)(0)
+			io.toMatEngine.vectorIn(1) := B(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			io.toMatEngine.vectorIn(0) := B(0)(1)
+			io.toMatEngine.vectorIn(1) := B(1)(1)
+			CAinvB(0)(0) := io.toMatEngine.result(0)
+			CAinvB(1)(0) := io.toMatEngine.result(1)
+		} .elsewhen (engine_counter === UInt(2)) {
+			CAinvB(0)(1) := io.toMatEngine.result(0)
+			CAinvB(1)(1) := io.toMatEngine.result(1)
+		} .otherwise {
+			engine_counter := UInt(0)
+			step := UInt(4)
+			io.mat2inverse.rst := Bool(true)
+		}
+		
+		schur := x1
+
+	} .elsewhen (step === UInt(4)) {
+		io.mat2inverse.rst := Bool(false)
+		io.mat2inverse.matIn := schur
+		when (inverse_done) {
+			schurInv := io.mat2inverse.matOut
+			step := UInt(5)
+			engine_counter := UInt(0)
+		}
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := Ainv(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			engine_counter := UInt(1)
+			io.toMatEngine.vectorIn(0) := B(0)(0)
+			io.toMatEngine.vectorIn(1) := B(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			engine_counter := UInt(2)
+			io.toMatEngine.vectorIn(0) := B(0)(1)
+			io.toMatEngine.vectorIn(1) := B(1)(1)
+			AinvB(0)(0) := io.toMatEngine.result(0)
+			AinvB(1)(0) := io.toMatEngine.result(1)
+		} .otherwise {
+			io.toMatEngine.vectorIn(0) := B(0)(1)
+			io.toMatEngine.vectorIn(1) := B(1)(1)
+			AinvB(0)(1) := io.toMatEngine.result(0)
+			AinvB(1)(1) := io.toMatEngine.result(1)
+		} 
+
+	} .elsewhen (step === UInt(5)) {
+		engine_counter := engine_counter + UInt(1)
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := AinvB(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			io.toMatEngine.vectorIn(0) := schurInv(0)(0)
+			io.toMatEngine.vectorIn(1) := schurInv(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			io.toMatEngine.vectorIn(0) := schurInv(0)(1)
+			io.toMatEngine.vectorIn(1) := schurInv(1)(1)
+			AinvBschurInv(0)(0) := io.toMatEngine.result(0)
+			AinvBschurInv(1)(0) := io.toMatEngine.result(1)
+		} .otherwise {
+			AinvBschurInv(0)(1) := io.toMatEngine.result(0)
+			AinvBschurInv(1)(1) := io.toMatEngine.result(1)
+			engine_counter := UInt(0)
+			step := UInt(6)
+		}
+	} .elsewhen (step === UInt(6)) {
+		engine_counter := engine_counter + UInt(1)
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := schurInv(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			io.toMatEngine.vectorIn(0) := CAinv(0)(0)
+			io.toMatEngine.vectorIn(1) := CAinv(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			io.toMatEngine.vectorIn(0) := CAinv(0)(1)
+			io.toMatEngine.vectorIn(1) := CAinv(1)(1)
+			schurInvCAinv(0)(0) := io.toMatEngine.result(0)
+			schurInvCAinv(1)(0) := io.toMatEngine.result(1)
+		} .otherwise {
+			schurInvCAinv(0)(1) := io.toMatEngine.result(0)
+			schurInvCAinv(1)(1) := io.toMatEngine.result(1)
+			engine_counter := UInt(0)
+			step := UInt(7)
+		}
+	} .elsewhen (step === UInt(7)) {
+		engine_counter := engine_counter + UInt(1)
+
+		for (i <- 0 until 2) {
+			for (j <- 0 until 2) {
+				io.toMatEngine.matrixIn(i)(j) := AinvBschurInv(i)(j)
+			}
+		}
+
+		when (engine_counter === UInt(0)) {
+			io.toMatEngine.vectorIn(0) := CAinv(0)(0)
+			io.toMatEngine.vectorIn(1) := CAinv(1)(0)
+		} .elsewhen (engine_counter === UInt(1)) {
+			io.toMatEngine.vectorIn(0) := CAinv(0)(1)
+			io.toMatEngine.vectorIn(1) := CAinv(1)(1)
+			AinvBschurInvCAinv(0)(0) := io.toMatEngine.result(0)
+			AinvBschurInvCAinv(1)(0) := io.toMatEngine.result(1)
+		} .otherwise {
+			AinvBschurInvCAinv(0)(1) := io.toMatEngine.result(0)
+			AinvBschurInvCAinv(1)(1) := io.toMatEngine.result(1)
+			engine_counter := UInt(0)
+			step := UInt(8)
+		}
+	} .otherwise {
+		io.toMatEngine.matrixIn(0)(0) := zero
+		io.toMatEngine.matrixIn(0)(1) := zero
+		io.toMatEngine.matrixIn(1)(0) := zero
+		io.toMatEngine.matrixIn(1)(1) := zero
+		io.toMatEngine.vectorIn(0) := zero
+		io.toMatEngine.vectorIn(1) := zero
+
+		io.mat2inverse.rst := Bool(true)
+		io.mat2inverse.matIn := Vec.fill(2){ Vec.fill(2){ zero } }
+		
+		Ainv := Ainv
+		CAinv := CAinv
+		CAinvB := CAinvB
+		schur := schur
+		schurInv := schurInv
+		AinvB := AinvB
+		AinvBschurInv := AinvBschurInv
+		schurInvCAinv := schurInvCAinv
+		AinvBschurInvCAinv := AinvBschurInvCAinv
+	}
+
+	// computes block matrices in inverse
+	val Afinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+	val Bfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+	val Cfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+	val Dfinal = Vec.fill(2){ Vec.fill(2){ new ComplexSFix(w=params.fix_pt_wd, e=params.fix_pt_exp) } }
+
+	Afinal := mat2add( Ainv, AinvBschurInvCAinv )
 	Bfinal := mat2negate( AinvBschurInv )
-	Cfinal := mat2negate( mat2multiply( schurInv, CAinv ) )
+	Cfinal := mat2negate( schurInvCAinv )
 	Dfinal := schurInv
 
 	// fills in the output from the blocks
@@ -114,48 +295,4 @@ class Mat4Inverse (implicit params:LMSParams) extends Module
 		}
 	}
 
-}
-
-class Mat4InverseTests(c: Mat4Inverse, params: LMSParams) extends Tester(c)
-{
-val matIn_r = Array( Array(1.3,-2.1,1.2,1), Array(0.3,-0.5,-0.4,-1), Array(0.2,0.5,-0.9,1), Array(0.1,0.95,-0.3,-1))
-val matIn_i = Array( Array(1.1,0.7,2.1,1), Array(-1.1,1.1,0.3,1), Array(-0.3,0.5,-0.7,1), Array(-0.3,0.5,-0.7,1))
-
-for (t <- 0 until 1)
-    {
-	poke(c.io.rst,0)
-        // Apply inputs
-	for (i <- 0 until 4) {
-		for (j <- 0 until 4) {
-			poke(c.io.matIn(i)(j).real.raw, conv_double_to_fp(matIn_r(i)(j), params.fix_pt_frac_bits, params.fix_pt_wd))
-			poke(c.io.matIn(i)(j).imag.raw, conv_double_to_fp(matIn_i(i)(j), params.fix_pt_frac_bits, params.fix_pt_wd))
-		}
-	}
-
-        // Clock the module
-        step(10)
-	peek(c.mat2inverse.io.rst)
-	step(1)
-	peek(c.mat2inverse.io.rst)
-	step(1)
-	peek(c.mat2inverse.io.rst)
-	step(7)
-	for (i <- 0 until 2) {
-		for (j <- 0 until 2) {
-			println( conv_fp_to_double(peek(c.io.probe(i)(j).real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-			println( conv_fp_to_double(peek(c.io.probe(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-		}
-	}
-
-
-	println()
-	println()
-	for (i <- 0 until 4) {
-		for (j <- 0 until 4) {
-			println( conv_fp_to_double(peek(c.io.matOut(i)(j).real.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-			println( conv_fp_to_double(peek(c.io.matOut(i)(j).imag.raw), params.fix_pt_frac_bits, params.fix_pt_wd) )
-		}
-	}	
-
-    }
 }

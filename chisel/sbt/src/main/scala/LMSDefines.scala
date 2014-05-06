@@ -18,7 +18,7 @@ case class LMSParams()
     val max_train_len = 4
     val fifo_len = 16
     val num_registers = 6
-    val mu = 0.1
+    val mu = 0.01
 
     // Bit widths
     val reg_addr_wd = log2Up(num_registers)
