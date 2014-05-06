@@ -3,7 +3,7 @@ function [decodedData, SER] = MIMO_sim(mu_LMS, mu_LMS_seeded, SNR_dB, H_input, d
 % Transmit parameters
 Ntx = 4;
 trainLength = 1000;
-dataLength = 1000;
+dataLength = 44000;
 transmitLength = trainLength + dataLength;
 
 % Receive parameters
