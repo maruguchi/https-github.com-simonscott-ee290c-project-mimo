@@ -6,7 +6,7 @@ fix_pt = [(24, 12), (20, 10), (16, 10), (14, 8)]
 max_ant = [4]
 snr = range(0, 35, 5)
 
-testDir = ["snr_" + str(s) + "dB" for s in snr]
+testDir = ["snr_adaptive_" + str(s) + "db" for s in snr]
 
 for f in fix_pt:
     for ntx in max_ant:

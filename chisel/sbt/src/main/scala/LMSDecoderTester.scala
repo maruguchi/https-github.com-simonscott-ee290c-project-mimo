@@ -49,7 +49,7 @@ class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
     }
 
     // Number of cycles to run test
-    val cycles = 2000
+    val cycles = 45000
 
     // Keep track of how many symbols read and written
     var num_reads = 0
@@ -64,6 +64,7 @@ class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
 
     for (cycle <- 0 until cycles)
     {
+/*
         // Debug output for this cycle
         peek(c.state)
         peekAt(c.train_mem, 0)
@@ -72,7 +73,7 @@ class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
         println(s"SNR inv = ${conv_fp_to_double(peek(c.initializeWeights.io.snr_inv.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)}")
 
         // Samples going into adaptive decoder
-/*        for(i <- 0 until c.params.max_ntx_nrx) {
+        for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             val im = conv_fp_to_double(peek(c.initializeWeights.io.channelMatrix(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
@@ -84,7 +85,7 @@ class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
             val im = conv_fp_to_double(peek(c.initializeWeights.io.initialW(0)(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
-*/
+
         // The decoded symbols as complex numbers
         for(i <- 0 until c.params.max_ntx_nrx) {
             val re = conv_fp_to_double(peek(c.adaptiveDecoder.io.toMatEngine.result(i).real.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
@@ -98,7 +99,7 @@ class LMSDecoderTester(c: LMSDecoder, testDir: String) extends Tester(c)
             val im = conv_fp_to_double(peek(c.io.error(i).imag.raw), c.params.fix_pt_frac_bits, c.params.fix_pt_wd)
             println(s"[$re , $im]")
         }
-
+*/
         // Check for config or train mem write
         if(configTrainBusCommands.contains(cycle))
         {
