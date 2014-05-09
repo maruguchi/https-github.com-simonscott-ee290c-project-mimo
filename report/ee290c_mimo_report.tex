@@ -77,7 +77,15 @@
 %%%% OBJECTIVES SECTION %%%%
 \section{Objectives}
 
-\IEEEPARstart{T}{he} objectives of this project are to...
+\IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel, as illustrated in Figure~\ref{mimo_cartoon}. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered.
+
+The objectives of this project is therefore to develop a MIMO decoder that:
+\begin{itemize}
+\item supports the antenna configurations and modulation schemes used in both 802.11ac and LTE.
+\item meets both the 802.11ac and LTE throughput requirements.
+\item is able to adapt to changing channel conditions.
+\item is both compile-time and run-time configurable.
+\end{itemize}
 
 \begin{figure}[!h]
 \centering
@@ -92,12 +100,13 @@
 
 ANTONIO:
 Feel free to write whatever you want here. Essentially, this section will probably be the same as the second slide in our presentation.
-Probably also copy some of the text from the motivation section of the project proposal.
-Also, feel free to change the title.
+Probably also copy some of the text from the motivation section of the project proposal (any references you use should be placed inside the refs.bib file).
+Also, feel free to change the title of this section to something more appropriate.
 
 
 %%%% COMPARISON OF OTHER DECODERS SECTION %%%%
 \section{Comparison to other MIMO Decoding Algorithms}
+\label{matlab_comparison_section}
 
 ANTONIO:
 Compare the MATLAB simulations. Figure \ref{ser_snr_different_schemes_static} is for a static purely random channel. Figure \ref{ser_snr_different_schemes_dynamic} is based on IEEE model B and has 3Hz doppler.
@@ -120,7 +129,7 @@ Compare the MATLAB simulations. Figure \ref{ser_snr_different_schemes_static} is
 %%%% ARCHITECTURE SECTION %%%%
 \section{Hardware Architecture}
 
-Overview description of hardware.
+SIMON: overview description of hardware.
 
 \begin{figure}[!h]
 \centering
@@ -130,6 +139,8 @@ Overview description of hardware.
 \end{figure}
 
 \subsection{Matrix Engine}
+
+SIMON
 
 \begin{figure}[!h]
 \centering
@@ -148,6 +159,8 @@ ANTONIO
 
 \subsection{Adaptive Decoder Module}
 
+SIMON
+
 \begin{figure}[!h]
 \centering
 \includegraphics*[width=8cm, viewport = 0 510 560 810]{images/adaptive_decoder.pdf}
@@ -157,7 +170,7 @@ ANTONIO
 
 \subsection{Evaluation of Bitwidths}
 
-Explain why poor performance at low bitwidth (overflow, causing wraparound). Would be better if saturated. Could also use pseudo-floating point.
+The LMS MIMO Decoder architecture described above was implemented in Chisel \cite{chisel}. In order to verify correctness and determine the optimum bitwidths to use, the design was tested in Chisel, using test vectors taken from the MATLAB simulations (as described in Section \ref{matlab_comparison_section}). The symbol error rate versus SNR plots for different bitwidths, for a static channel, are shown in Figure~\ref{ser_ber_chisel_static}. This plot also includes the results from the MATLAB simulation for comparison. Similarly, Figure~\ref{ser_ber_chisel_dynamic} shows the SER vs SNR plots for a slowly changing channel.
 
 \begin{figure}[!h]
 \centering
@@ -173,10 +186,15 @@ Explain why poor performance at low bitwidth (overflow, causing wraparound). Wou
 \label{ser_ber_chisel_dynamic}
 \end{figure}
 
+For the static channel, the 20 bit and 24 bit Chisel implementations very closely track the MATLAB simulations, while the 16 bit simulation is completely incorrect. However, for the dynamic channel, where higher precision is needed to track the changing channel, only the 24 bit implementation is able to match the performance of the MATLAB simulation. Therefore, 24 bits was selected as the desired bitwidth for the design.
+
+The poor performance at lower bitwidths is caused by arithmetic overflow during the matrix inverse operation in the Initialize Weights module. Since the channel matrix H can be poorly conditioned, the entries in its inverse matrix can have a high dynamic range, resulting in arithmetic overflow if too few bits are used. Better performance can be achieved at lower bitwidths if saturating arithmetic or pseudo-floating-point were used. Unfortunately, neither of these two features are currently supported in Chisel.
+
 
 %%%% SYNTHESIS CONSTRAINTS SECTION %%%%
 \section{Synthesis Options and Constraints}
 
+SIMON:
 Throughput requirement
 Levels of parallelism
 Latency of seeding matrix, based on 802.11ac specs.
@@ -185,6 +203,7 @@ Latency of seeding matrix, based on 802.11ac specs.
 %%%% SYNTHESIS RESULTS SECTION %%%%
 \section{Synthesis Results}
 
+SIMON:
 Clock, area power
 Power breakdown
 Can achieve better results if voltage scale.
@@ -200,6 +219,7 @@ ANTONIO: do we want to compare to area/power of other MIMO decoders from the lit
 \label{power_vs_area}
 \end{figure}
 
+SIMON:
 Conclusion: better performance if faster clock and take many cycles in MAtrix Engine.
 
 \begin{figure}[!h]
@@ -209,6 +229,7 @@ Conclusion: better performance if faster clock and take many cycles in MAtrix En
 \label{power_breakdown_module}
 \end{figure}
 
+SIMON:
 Power gating will clearly help, as shown in table below.
 
 \begin{table}[!h]
@@ -241,13 +262,6 @@ initialization modules & & & 42.31 \\
 ANTONIO: I'll leave this for you to fill out once you've finished your section.
 
 Things to mention: power gating of initialization modules; adjusting mu (LMS step size) dynamically; producing soft decisions and then adjusting weights based on hard decisions from LDPC decoder; voltage scaling as we reduce the clock rate for higher levels of parallelization; pseudo-floating point or saturating arithmetic in inverse engine to allow fewer bits to be used.
-
-
-% Can use something like this to put references on a page
-% by themselves when using endfloat and the captionsoff option.
-\ifCLASSOPTIONcaptionsoff
-  \newpage
-\fi
 
 
 % references section
