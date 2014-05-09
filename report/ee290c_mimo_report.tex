@@ -129,7 +129,11 @@ Compare the MATLAB simulations. Figure \ref{ser_snr_different_schemes_static} is
 %%%% ARCHITECTURE SECTION %%%%
 \section{Hardware Architecture}
 
-SIMON: overview description of hardware.
+The arhictecture of the Adaptive MIMO Decoder is shown in Figure~\ref{top_level_arch}. The host configures the decoder by writing to the configuration registers, setting up the number of antennas used, the length of the training sequence, the modulation scheme used and the current SNR. Since different standards use different training sequences, the host then needs to write the current training sequence to the training memory. Once complete, the host writes a 1 to the {\em start} register, and begins sending samples to the RX Data Queue.
+
+The Channel Estimator uses the training sequence and the first few received samples to estimate the channel matrix H. This channel matrix is then sent to the Initialize Weights module, which computes the initial decoder matrix W\_seed. The Adaptive Decoder uses this W\_seed as a starting point for its decoder matrix W. The Adaptive Decoder decodes the samples in the RX Data Queue and writes the decoded symbols to the Decoded Data Queue. For each set of samples, the Adaptive Decoder also updates the W matrix.
+
+Finally, the host reads the decoded symbols from the Decoded Data Queue. Each of the different modules in the design will now be described in more detail below.
 
 \begin{figure}[!h]
 \centering
@@ -140,7 +144,7 @@ SIMON: overview description of hardware.
 
 \subsection{Matrix Engine}
 
-SIMON
+The Matrix Engine computes the complex vector-matrix multiply between an input vector V and an input matrix M. The input matrix M has size (number transmit antennas) x (number receive antennas). Since the Adaptive Decoder needs to decode a new set of antenna samples every cycle, the Matrix Engine needs to compute the vector-matrix multiply in a single cycle. For the 4x4 MIMO case, it does this using four dot-product units (each of which compute the dot product between two 4-element vectors) which operate in parallel. However, if only 2x2 MIMO needs to be supported, then only two dot-product units will be created at compile time.
 
 \begin{figure}[!h]
 \centering
@@ -159,8 +163,12 @@ ANTONIO
 
 \subsection{Adaptive Decoder Module}
 
-SIMON
+The task of the Adaptive Decoder Module is simply to decode the samples received from the antennas into the symbols for the independent data streams. It does this by multiplying the received samples (vector $v$) with the decoder matrix $W$, using the Matrix Engine. This is shown in Figure~\ref{adaptive_decoder}. The $Wx$ vector is then converted into a vector of symbols $y$ using a simple slicer to find the nearest constellation points. The $error$ between $Wx$ and the decoded symbols is computed and multiplied by a step-size parameter $\mu$.
 
+This weighted error is used to update the decoder matrix according to the following equation:
+\[ W_{next} = W - x \times (error \cdot \mu) \]
+
+Note that $x \times (error \cdot \mu)$ is the vector cross-product between received samples $x$ and the error weighted by $\mu$.
 \begin{figure}[!h]
 \centering
 \includegraphics*[width=8cm, viewport = 0 510 560 810]{images/adaptive_decoder.pdf}
@@ -236,7 +244,7 @@ It is quite clear that the 24-bit 70MHz version results in the smallest area (0.
 
 Furthermore, extrapolating from Figure~\ref{power_vs_area} shows that even smaller area/power figures could be obtained if the data streams from the 4 antennas were processed sequentially (rather than in parallel, as they are currently done), and the clock rate was increased accordingly.
 
-The power consumed by each module in the MIMO decoder is shown in Table~\ref{power_breakdown_table} and illustrated in Figure~\ref{power_breakdown_module}. These show that almost half the power is consumed by the initialization modules ()
+The power consumed by each module in the MIMO decoder is shown in Table~\ref{power_breakdown_table} and illustrated in Figure~\ref{power_breakdown_module}. These show that almost half the power (35.8mW) is consumed by the initialization modules: Channel Estimator and Initialize Weights. Since these modules are only used for a very short period of time at the beginning of each packet ($<$ 0.1\% of the time), power gating them will reduce the average power consumption to 42mW.
 
 \begin{table}[!h]
 \caption{Breakdown of power by module}
@@ -246,12 +254,12 @@ The power consumed by each module in the MIMO decoder is shown in Table~\ref{pow
 \hline
 Module & Submodule & & Power (mW) \\
 \hline
-Adaptive Decoder & & & 15.1 \\
+Channel Estimator & & & 2.13 \\
 Initialize Weights & Mat4 Inverse & 3.96 & \\
  & Mat2 Inverse & 24.8 & \\
  & Module total & & 33.7 \\
-Channel Estimator & & & 2.13 \\
 Matrix Engine & & & 25.4 \\
+Adaptive Decoder & & & 15.1 \\
 Queues & & & 1.81 \\
 \hline
 \em{Total} & & & \em{78.14} \\
