@@ -1,0 +1,4 @@
+pdflatex ee290c_mimo_report.tex
+bibtex ee290c_mimo_report.aux
+pdflatex ee290c_mimo_report.tex
+pdflatex ee290c_mimo_report.tex

@@ -1,0 +1,260 @@
+
+\documentclass[journal]{IEEEtran}
+%
+% If IEEEtran.cls has not been installed into the LaTeX system files,
+% manually specify the path to it like:
+%\documentclass[journal]{./ieeetrans_template/IEEEtran}
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation can
+% be obtained at: 
+% http://www.ctan.org/tex-archive/macros/latex/required/graphics/
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found as epslatex.ps or
+% epslatex.pdf at: http://www.ctan.org/tex-archive/info/
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+
+% *** Do not adjust lengths that control margins, column widths, etc. ***
+% *** Do not use packages that alter fonts (such as pslatex).         ***
+% There should be no need to do such things with IEEEtran.cls V1.6 and later.
+% (Unless specifically asked to do so by the journal or conference you plan
+% to submit to, of course. )
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+
+% paper title
+% can use linebreaks \\ within to get better formatting as desired
+\title{Adaptive MIMO Decoder \\ {\Large EE290C Project Final Report}}
+
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+%
+
+\author{Antonio Puglielli and Simon Scott}
+
+
+% make the title area
+\maketitle
+
+%%%% OBJECTIVES SECTION %%%%
+\section{Objectives}
+
+\IEEEPARstart{T}{he} objectives of this project are to...
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=5cm, viewport = 300 0 560 130]{images/agilent_mimo.jpg}
+\caption{A 2x2 MIMO configuration}
+\label{mimo_cartoon}
+\end{figure}
+
+
+%%%% MOTIVATION AND ALGORITHM SECTION %%%%
+\section{Motivation for the LMS Decoding Algorithm}
+
+ANTONIO:
+Feel free to write whatever you want here. Essentially, this section will probably be the same as the second slide in our presentation.
+Probably also copy some of the text from the motivation section of the project proposal.
+Also, feel free to change the title.
+
+
+%%%% COMPARISON OF OTHER DECODERS SECTION %%%%
+\section{Comparison to other MIMO Decoding Algorithms}
+
+ANTONIO:
+Compare the MATLAB simulations. Figure \ref{ser_snr_different_schemes_static} is for a static purely random channel. Figure \ref{ser_snr_different_schemes_dynamic} is based on IEEE model B and has 3Hz doppler.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=8cm]{images/static_channel_decoder_comparison.png}
+\caption{SER vs SNR for different MIMO detection schemes with a static channel}
+\label{ser_snr_different_schemes_static}
+\end{figure}
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=9cm]{images/time_varying_channel_doppler_3.png}
+\caption{SER vs SNR for different MIMO detection schemes with a time varying channel (doppler shift of 3Hz)}
+\label{ser_snr_different_schemes_dynamic}
+\end{figure}
+
+
+%%%% ARCHITECTURE SECTION %%%%
+\section{Hardware Architecture}
+
+Overview description of hardware.
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=9cm, viewport = 0 90 789 600]{images/top_level_arch.pdf}
+\caption{The hardware architecture of the LMS Adaptive MIMO Decoder}
+\label{top_level_arch}
+\end{figure}
+
+\subsection{Matrix Engine}
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=4cm, viewport = 30 640 260 840]{images/matrix_engine.pdf}
+\caption{Design of the matrix engine}
+\label{matrix_engine}
+\end{figure}
+
+\subsection{Channel Estimator Module}
+
+ANTONIO
+
+\subsection{Initialize Weights Module}
+
+ANTONIO
+
+\subsection{Adaptive Decoder Module}
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=8cm, viewport = 0 510 560 810]{images/adaptive_decoder.pdf}
+\caption{The adaptive decoder module}
+\label{adaptive_decoder}
+\end{figure}
+
+\subsection{Evaluation of Bitwidths}
+
+Explain why poor performance at low bitwidth (overflow, causing wraparound). Would be better if saturated. Could also use pseudo-floating point.
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=8cm, viewport = 80 260 560 530]{images/snr_ber_curves_chisel_static.pdf}
+\caption{SER vs SNR curves for Chisel implementations with different bitwidths (static channel)}
+\label{ser_ber_chisel_static}
+\end{figure}
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=9cm, viewport = 80 270 560 530]{images/snr_ber_curves_chisel_doppler.pdf}
+\caption{SER vs SNR curves for Chisel implementations with different bitwidths (dynamic channel)}
+\label{ser_ber_chisel_dynamic}
+\end{figure}
+
+
+%%%% SYNTHESIS CONSTRAINTS SECTION %%%%
+\section{Synthesis Options and Constraints}
+
+Throughput requirement
+Levels of parallelism
+Latency of seeding matrix, based on 802.11ac specs.
+
+
+%%%% SYNTHESIS RESULTS SECTION %%%%
+\section{Synthesis Results}
+
+Clock, area power
+Power breakdown
+Can achieve better results if voltage scale.
+
+ANTONIO: if you can, please insert some 2x2 vs 4x4 results here. Mention that 4x4 hardware supports 2x2, but more efficient to generate 2x2 hardware.
+
+ANTONIO: do we want to compare to area/power of other MIMO decoders from the literature?
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=8cm, viewport = 60 250 560 540]{images/power_vs_area.pdf}
+\caption{Power vs area for different levels of parallelism}
+\label{power_vs_area}
+\end{figure}
+
+Conclusion: better performance if faster clock and take many cycles in MAtrix Engine.
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=6cm, viewport = 90 100 660 540]{images/power_breakdown_module.pdf}
+\caption{Power of LMS MIMO Decoder by module}
+\label{power_breakdown_module}
+\end{figure}
+
+Power gating will clearly help, as shown in table below.
+
+\begin{table}[!h]
+\caption{Breakdown of power by module}
+\label{power_breakdown_table}
+\centering
+\begin{tabular}{l l l r}
+\hline
+Module & Submodule & & Power (mW) \\
+\hline
+Adaptive Decoder & & & 15.1 \\
+Initialize Weights & Mat4 Inverse & 3.96 & \\
+ & Mat2 Inverse & 24.8 & \\
+ & Module total & & 33.7 \\
+Channel Estimator & & & 2.13 \\
+Matrix Engine & & & 25.4 \\
+Queues & & & 1.81 \\
+\hline
+\em{Total} & & & \em{78.14} \\
+Total without & & & \\
+initialization modules & & & 42.31 \\
+\hline
+\end{tabular}
+\end{table}
+
+
+%%%% CONCLUSION AND FUTURE WORK SECTION %%%%
+\section{Conclusions and Future Work}
+
+ANTONIO: I'll leave this for you to fill out once you've finished your section.
+
+Things to mention: power gating of initialization modules; adjusting mu (LMS step size) dynamically; producing soft decisions and then adjusting weights based on hard decisions from LDPC decoder; voltage scaling as we reduce the clock rate for higher levels of parallelization; pseudo-floating point or saturating arithmetic in inverse engine to allow fewer bits to be used.
+
+
+% Can use something like this to put references on a page
+% by themselves when using endfloat and the captionsoff option.
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+
+% references section
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
+
+
