@@ -79,7 +79,7 @@
 
 \IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel, as illustrated in Figure~\ref{mimo_cartoon}. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered.
 
-The objectives of this project is therefore to develop a MIMO decoder that:
+The objectives of this project is therefore to develop a VLSI implementation of a MIMO decoder that:
 \begin{itemize}
 \item supports the antenna configurations and modulation schemes used in both 802.11ac and LTE.
 \item meets both the 802.11ac and LTE throughput requirements.
@@ -194,23 +194,36 @@ The poor performance at lower bitwidths is caused by arithmetic overflow during 
 %%%% SYNTHESIS CONSTRAINTS SECTION %%%%
 \section{Synthesis Options and Constraints}
 
-SIMON:
-Throughput requirement
-Levels of parallelism
-Latency of seeding matrix, based on 802.11ac specs.
+The clock rate at which the design was synthesized was determined by maximum throughput requirements for 802.11ac and LTE. When utilizing an 80MHz channel, 802.11ac base stations can transmit 278 000 symbols/sub-carrier/antenna/second \cite{802_11_ac_handbook}. With 234 sub-carriers, this translates to 70 million symbols/second/antenna.
+
+LTE, on the other hand, has a maximum symbol rate of only 14 000 symbols/sub-carrier/antenna/second, but with 1200 sub-carriers \cite{lte_webpage}. This results in a throughput of 16.8 million symbols/second/antenna.
+
+If the sub-carriers are decoded sequentially at the receiver (i.e. multiplexing the decoder between the sub-carriers, in time), but all the antenna streams are decoded in parallel, the Adaptive MIMO Decoder will therefore need to be clocked at 70MHz (i.e. at the symbols/antenna rate). However, it is possible to process multiple sub-carriers in parallel, as each sub-carrier is completely independent of the others. The advantage of this approach is that all the sub-carriers can share (on a time-multiplexing basis) common Channel Estimation and Weight Initialization modules, as these modules only run for a short period of time at startup. The only modules that therefore need to be duplicated are the the Matrix Engine and the Adaptive Decoder.
+
+Table~\ref{clock_rate_table} therefore shows the required clock rate for parallelism levels of 1, 2 and 4. Note that the level of parallelism indicates both the number of sub-carriers that can be decoded in parallel, as well as the number of instantiations of the Matrix Engine and Adaptive Decoder. This means that all three scenarios shown in the table have {\em identical} throughput.
+
+\begin{table}[!h]
+\caption{VLSI clock rate for different levels of parallelism}
+\label{clock_rate_table}
+\centering
+\begin{tabular}{l l}
+\hline
+Number of parallel sub-carriers & Clock Rate \\
+\hline
+1 & 70 MHz \\
+2 & 35 MHz \\
+4 & 17.5 MHz \\
+\hline
+\end{tabular}
+\end{table}
+
+While estimating the channel matrix at the beginning of each packet (using the Long Training Field in the 802.11ac PHY header) and computing the resulting (initial) weight matrix does take time, special care was taken to ensure that this will not impact the latency and throughput requirements of 802.11ac and LTE. Since these initialization operations only take 50 clock cycles, but decoding entire packet takes 45000 cycles (or more, if aggregate packets are used), the initialization delay is easily handled by performing a small amount of buffering in the input queues and increasing the clock rate by 1-2\%.
 
 
 %%%% SYNTHESIS RESULTS SECTION %%%%
 \section{Synthesis Results}
 
-SIMON:
-Clock, area power
-Power breakdown
-Can achieve better results if voltage scale.
-
-ANTONIO: if you can, please insert some 2x2 vs 4x4 results here. Mention that 4x4 hardware supports 2x2, but more efficient to generate 2x2 hardware.
-
-ANTONIO: do we want to compare to area/power of other MIMO decoders from the literature?
+The Chisel designed was synthesized at the three clock rates shown in Table~\ref{clock_rate_table}. Note that for the 35 MHz and 17.5 MHz cases, the Matrix Engine and Adaptive Decoder modules were replicated the required number of times. The results are shown in Figure~\ref{power_vs_area}, for a 4 antenna decoder. Again, it must be emphasized that all three synthesized versions have the same throughput, and are able to meet the requirements for 802.11ac and LTE.
 
 \begin{figure}[!h]
 \centering
@@ -219,18 +232,11 @@ ANTONIO: do we want to compare to area/power of other MIMO decoders from the lit
 \label{power_vs_area}
 \end{figure}
 
-SIMON:
-Conclusion: better performance if faster clock and take many cycles in MAtrix Engine.
+It is quite clear that the 24-bit 70MHz version results in the smallest area (0.6mm$^2$) and lowest power (78mW). While the 20-bit version does result in a slightly smaller design, it cannot be used due to poor reliability in changing channel conditions (as previously explained). Lower power figures at the slower clock rates could probably be achieved if voltage scaling was used; however, this feature was not available to us.
 
-\begin{figure}[!h]
-\centering
-\includegraphics*[width=6cm, viewport = 90 100 660 540]{images/power_breakdown_module.pdf}
-\caption{Power of LMS MIMO Decoder by module}
-\label{power_breakdown_module}
-\end{figure}
+Furthermore, extrapolating from Figure~\ref{power_vs_area} shows that even smaller area/power figures could be obtained if the data streams from the 4 antennas were processed sequentially (rather than in parallel, as they are currently done), and the clock rate was increased accordingly.
 
-SIMON:
-Power gating will clearly help, as shown in table below.
+The power consumed by each module in the MIMO decoder is shown in Table~\ref{power_breakdown_table} and illustrated in Figure~\ref{power_breakdown_module}. These show that almost half the power is consumed by the initialization modules ()
 
 \begin{table}[!h]
 \caption{Breakdown of power by module}
@@ -254,6 +260,17 @@ initialization modules & & & 42.31 \\
 \hline
 \end{tabular}
 \end{table}
+
+\begin{figure}[!h]
+\centering
+\includegraphics*[width=6cm, viewport = 90 100 660 540]{images/power_breakdown_module.pdf}
+\caption{Power of LMS MIMO Decoder by module}
+\label{power_breakdown_module}
+\end{figure}
+
+ANTONIO: if you can, please insert some 2x2 vs 4x4 results here. Mention that 4x4 hardware supports 2x2, but more efficient to generate 2x2 hardware.
+
+ANTONIO: do we want to compare to area/power of other MIMO decoders from the literature?
 
 
 %%%% CONCLUSION AND FUTURE WORK SECTION %%%%
