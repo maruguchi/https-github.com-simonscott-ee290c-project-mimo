@@ -77,9 +77,9 @@
 %%%% OBJECTIVES SECTION %%%%
 \section{Objectives}
 
-\IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel, as illustrated in Figure~\ref{mimo_cartoon}. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered.
+\IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel, as illustrated in Figure~\ref{mimo_cartoon}. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered, meaning that all the receive antennas are assumed to be on the same hardware and can share information.
 
-The objectives of this project is therefore to develop a VLSI implementation of a MIMO decoder that:
+The objectives of this project are therefore to develop a VLSI implementation of a MIMO decoder that:
 \begin{itemize}
 \item supports the antenna configurations and modulation schemes used in both 802.11ac and LTE.
 \item meets both the 802.11ac and LTE throughput requirements.
@@ -96,40 +96,47 @@ The objectives of this project is therefore to develop a VLSI implementation of 
 
 
 %%%% MOTIVATION AND ALGORITHM SECTION %%%%
-\section{Motivation for the LMS Decoding Algorithm}
-
-ANTONIO:
-Feel free to write whatever you want here. Essentially, this section will probably be the same as the second slide in our presentation.
-Probably also copy some of the text from the motivation section of the project proposal (any references you use should be placed inside the refs.bib file).
-Also, feel free to change the title of this section to something more appropriate.
-
-
-%%%% COMPARISON OF OTHER DECODERS SECTION %%%%
-\section{Comparison to other MIMO Decoding Algorithms}
+\section{Algorithm Evaluation and Selection}
 \label{matlab_comparison_section}
 
-ANTONIO:
-Compare the MATLAB simulations. Figure \ref{ser_snr_different_schemes_static} is for a static purely random channel. Figure \ref{ser_snr_different_schemes_dynamic} is based on IEEE model B and has 3Hz doppler.
+The two main classes of MIMO detection algorithms are those of linear and nonlinear algorithms. Linear detection algorithms refer to techniques which form the detected symbols as a linear combination of the received data. Nonlinear detection schemes are more complex, but usually achieve better performance. 
 
-\begin{figure}[!h]
+The maximum likelihood (ML) receiver is a nonlinear scheme which is theoretically optimal. Based on the received data and the channel estimate, it computes  the most likely transmitted vector. However, its complexity scales exponentially with the MIMO order since the number of different transmit sequences increases exponentially with the number of spatial streams. Sphere decoding is a simplification of this which achieves cubic complexity by restricting the search space to a sphere of finite radius. 
+
+On the other hand, linear schemes require lower computational complexity but usually entail a loss in performance. These detection methods attempt to separate out the transmitted streams by linearly filtering the received vector. In zero-forcing (ZF) detection, the receive filter is chosen to minimize inter-stream interference. Though this technique performs well in interference-limited scenarios, there is a substantial loss in performance when noise dominates. Therefore, it is better to use the minimum mean square error (MMSE) receive filter since it minimizes the total mean square error in the detected vector. In the high SNR limit, this converges to the ZF receiver. Finally, the MMSE receiver can be combined with successive interference cancellation (SIC), where each spatial stream is successively decoded and its contribution subtracted from the received data. Therefore, streams decoded later in the process see a diminished amount of interference. This technique also theoretically achieves the full capacity, though in practice its performance is reduced compared to ML because it is more sensitive to errors in decoding the initial streams \cite{tse}. 
+
+An additional metric of interest is the ability to track channel variations. Since real channels vary between training sequences, it is desirable for the MIMO receiver to track these channel changes and maintain good performance. It is little use to invest in complex and power-hungry receiver hardware if this hardware cannot track the channel state and therefore suffers a large performance degradation. Consequently, it is of interest to add the ability to adapt on top of one of these MIMO detection schemes. This is easiest to accomplish with a linear detection scheme since adaptation can be implemented simply by modifying the receive filter, easily realized using a well-known technique such as least mean squares (LMS) or recursive least squares (RLS) \cite{digital_bf, bf_notes}. When the adaptive process is seeded with the initial MMSE receive filter, the convergence is immediate and tracking ability is improved.
+
+To evaluate the performance of these algorithms, we simulated the uncoded symbol error rate (SER) versus SNR curves for a 4x4 MIMO system. Figure \ref{ser_snr_different_schemes_static} shows the performance achieved by the different receive techniques in a static 4x4 channel realized using the 802.11n channel model B. As expected, the ML and sphere decoding achieve the best performance, and unseeded LMS (which uses a very long training sequence) the worst, while seeded (MMSE) LMS and direct processing (MMSE) achieve very similar performance. Figure \ref{ser_snr_different_schemes_dynamic} shows the same simulation conducted with a time-varying 802.11n model B channel using a maximum doppler shift of 3 Hz. Here we can see that all receive schemes suffer a substantial performance loss, but that seeded LMS achieves a SER comparable to that of ML for high SNRs due to its ability to track the channel variations. 
+
+\begin{figure}
 \centering
 \includegraphics[width=8cm]{images/static_channel_decoder_comparison.png}
 \caption{SER vs SNR for different MIMO detection schemes with a static channel}
 \label{ser_snr_different_schemes_static}
 \end{figure}
 
-\begin{figure}[!h]
+\begin{figure}
 \centering
 \includegraphics[width=9cm]{images/time_varying_channel_doppler_3.png}
 \caption{SER vs SNR for different MIMO detection schemes with a time varying channel (doppler shift of 3Hz)}
 \label{ser_snr_different_schemes_dynamic}
 \end{figure}
 
+Adaptation can be combined with the MMSE linear detection scheme into the following algorithm:
+\begin{enumerate}
+\item Estimate the channel matrix based on {\em a prior} known training sequence.
+\item Compute initial MMSE receive filter
+\item Begin processing received samples using receive filter matrix.
+\item Adapt receive filter using LMS algorithm to track channel variations.
+\end{enumerate}
+
+We implemented an LMS-MMSE MIMO decoder since this has relatively low implementation complexity but can show the usefulness of this technique and is easily extendable to more complicated receive processing. For example, MMSE-SIC detection can be accomplished by adaptively estimating the channel and performing the decoding one stream at a time instead of simultaneously. 
 
 %%%% ARCHITECTURE SECTION %%%%
 \section{Hardware Architecture}
 
-The arhictecture of the Adaptive MIMO Decoder is shown in Figure~\ref{top_level_arch}. The host configures the decoder by writing to the configuration registers, setting up the number of antennas used, the length of the training sequence, the modulation scheme used and the current SNR. Since different standards use different training sequences, the host then needs to write the current training sequence to the training memory. Once complete, the host writes a 1 to the {\em start} register, and begins sending samples to the RX Data Queue.
+The archictecture of the Adaptive MIMO Decoder is shown in Figure~\ref{top_level_arch}. The host configures the decoder by writing to the configuration registers, setting up the number of antennas used, the length of the training sequence, the modulation scheme used and the current SNR. Since different standards use different training sequences, the host then needs to write the current training sequence to the training memory. Once complete, the host writes a 1 to the {\em start} register, and begins sending samples to the RX Data Queue.
 
 The Channel Estimator uses the training sequence and the first few received samples to estimate the channel matrix H. This channel matrix is then sent to the Initialize Weights module, which computes the initial decoder matrix W\_seed. The Adaptive Decoder uses this W\_seed as a starting point for its decoder matrix W. The Adaptive Decoder decodes the samples in the RX Data Queue and writes the decoded symbols to the Decoded Data Queue. For each set of samples, the Adaptive Decoder also updates the W matrix.
 
@@ -155,11 +162,38 @@ The Matrix Engine computes the complex vector-matrix multiply between an input v
 
 \subsection{Channel Estimator Module}
 
-ANTONIO
+The channel estimator module uses the known training sequence as well as the corresponding received symbols to compute the initial channel estimate. We have used a training sequence which is orthogonal in space and time, mimicking the general format of the 802.11ac VHT-LTF fields but not the specifics. Since the training sequence is an orthogonal matrix, the channel estimate can be obtained simply from a matrix multiplication of the training sequence matrix with the received signals matrix. The channel estimator module uses the matrix engine to perform this computation and then sends the result to the weight initialization module.
 
 \subsection{Initialize Weights Module}
 
-ANTONIO
+The initialize weigts module computes the MMSE receive filter using the initial channel estimate, H:
+\[W = (H^H H + \sigma^2I)^{-1} H^H \]
+
+The main operations required are two matrix multiplications and one matrix inversion. The matrix multiplications are performed using the matrix engine, while a specialized 2x2 matrix inversion hardware is contained within this module. For 2x2 MIMO cases it is sufficient to simply use this module, while for larger MIMO orders the matrix is inverted blockwise using the 2x2 matrix inversion engine and small additional hardware.
+
+\subsubsection{2x2 Matrix Inversion}
+
+For 2x2 matrices, the inverse can be computed efficiently using the explicit formula:
+\[\left[ \begin{array}{cc} x_{11} & x_{12} \\ x_{21} & x_{22} \end{array}\right]^{-1} = \frac{1}{x_{11}x_{22}-x_{12}x_{21}}\left[ \begin{array}{cc} x_{22} & -x_{12} \\ -x_{21} & x_{11} \end{array}\right]\]
+
+This calls for two complex multiplications and a subtraction (to compute the determinant) and four complex divisions. Since the complex division requires a large and power-hungry hardware, we use a single complex divider (pipelined in three stages) which is multiplexed to perform the four divisions per 2x2 matrix. Thus, inversion of a 2x2 matrix takes 13 cycles (including one for determinant computation).
+
+\subsubsection{Inversion of Larger Matrices}
+
+To invert larger matrices, the 2x2 matrix inversion hardware and the matrix engine are used. The inversion is performed blockwise:
+\[\left[ \begin{array}{cc} A & B \\ C & D \end{array}\right]^{-1} = \left[ \begin{array}{c} A^{-1}+A^{-1}B(D-CA^{-1}B)^{-1}CA^{-1} \\ -(D-CA^{-1}B)^{-1}CA^{-1} \end{array} \right] \]
+\[ \left[ \begin{array}{c} -A^{-1}B(D-CA^{-1}B)^{-1} \\  (D-CA^{-1}B)^{-1} \end{array}\right]\]
+
+NEED TO FIX EQUATION TO USE MULTILNE
+
+For a 4x4 matrix inversion, this requires two 2x2 matrix inversions as well as several 2x2 matrix multiplications, which are performed using their respective dedicated hardware. We currently have not implemented 3x3 matrix inversion, but it can accomplished with minimal hardware overhead by using this same approach. 
+
+\begin{figure}
+\centering
+\includegraphics*[width=8cm]{images/initialize_weights.jpg}
+\caption{Weight initialization module}
+\label{initialize_weights}
+\end{figure}
 
 \subsection{Adaptive Decoder Module}
 
@@ -284,9 +318,16 @@ ANTONIO: do we want to compare to area/power of other MIMO decoders from the lit
 %%%% CONCLUSION AND FUTURE WORK SECTION %%%%
 \section{Conclusions and Future Work}
 
-ANTONIO: I'll leave this for you to fill out once you've finished your section.
+In this project, we have demonstrated an adaptive LMS-MMSE MIMO decoder that can achieve the throughput requirements of LTE and 802.11ac using QPSK modulation. The final design takes up less than 0.5 $mm^2$ of area and consumes 42mW when including power gating of the initialization blocks. By exploiting the LMS adaptive loop, this design is also able to track slow channel variations while maintaining good performance.
 
-Things to mention: power gating of initialization modules; adjusting mu (LMS step size) dynamically; producing soft decisions and then adjusting weights based on hard decisions from LDPC decoder; voltage scaling as we reduce the clock rate for higher levels of parallelization; pseudo-floating point or saturating arithmetic in inverse engine to allow fewer bits to be used.
+There are several areas of further work that could improve this design:
+\begin{enumerate}
+\item Implement a real control loop to turn off the initialization modules when they are not in use.
+\item Optimize the bit-widths to reduce area and power. Probably it is sufficient to keep longer bit widths in the initialization block (where the matrix inversion is sensitive to precision errors) and reduce the bit widths in the main adaptive decoder. The required bit width in the inversion block could also be reduced by using pseudo-floating point or saturating arithmetic.
+\item Evaluate energy reduction techniques when using parallel processing modules. Since each module can operate with a lower throughput, it should be possible to reduce energy per decoded symbol by reducing the supply voltage.
+\item Design a control loop to dynamically select the LMS step size based on the time scale of channel variations.
+\item Integrate this MIMO receiver with a channel decoder and use the decoder hard decisions to adapt the receive filter.
+\end{enumerate}
 
 
 % references section

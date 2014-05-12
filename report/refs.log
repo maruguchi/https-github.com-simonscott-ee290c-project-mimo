@@ -1,0 +1,22 @@
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdftex 2014.5.11)  11 MAY 2014 16:42
+entering extended mode
+**C:/Users/apuglielli/Documents/MATLAB/EE290C/report/refs.bib
+(C:/Users/apuglielli/Documents/MATLAB/EE290C/report/refs.bib
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.15 @BOOK{802_
+               11_ac_handbook,
+? 
+! Emergency stop.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.15 @BOOK{802_
+               11_ac_handbook,
+End of file on the terminal!
+
+!  ==> Fatal error occurred, no output PDF file produced!

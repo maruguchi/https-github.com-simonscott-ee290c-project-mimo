@@ -1,0 +1,365 @@
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9) (preloaded format=pdflatex 2014.5.10)  11 MAY 2014 17:09
+entering extended mode
+**C:/Users/apuglielli/Documents/MATLAB/EE290C/report/ee290c_mimo_report.tex
+(C:/Users/apuglielli/Documents/MATLAB/EE290C/report/ee290c_mimo_report.tex
+LaTeX2e <2014/05/01>
+Babel <v3.8m> and hyphenation patterns for english, afrikaans, ancientgreek, ar
+abic, armenian, assamese, basque, bengali, bokmal, bulgarian, catalan, coptic, 
+croatian, czech, danish, dutch, esperanto, estonian, farsi, finnish, french, ga
+lician, german, german-x-2013-05-26, greek, gujarati, hindi, hungarian, iceland
+ic, indonesian, interlingua, irish, italian, kannada, kurmanji, latin, latvian,
+ lithuanian, malayalam, marathi, mongolian, mongolianlmc, monogreek, ngerman, n
+german-x-2013-05-26, nynorsk, oriya, panjabi, pinyin, polish, portuguese, roman
+ian, russian, sanskrit, serbian, slovak, slovenian, spanish, swedish, swissgerm
+an, tamil, telugu, turkish, turkmen, ukenglish, ukrainian, uppersorbian, usengl
+ishmax, welsh, loaded.
+(C:\Users\apuglielli\Documents\MATLAB\EE290C\report\IEEEtran.cls
+Document Class: IEEEtran 2007/03/05 V1.7a by Michael Shell
+-- See the "IEEEtran_HOWTO" manual for usage information.
+-- http://www.michaelshell.org/tex/ieeetran/
+\@IEEEtrantmpdimenA=\dimen102
+\@IEEEtrantmpdimenB=\dimen103
+\@IEEEtrantmpcountA=\count79
+\@IEEEtrantmpcountB=\count80
+\@IEEEtrantmptoksA=\toks14
+LaTeX Font Info:    Try loading font information for OT1+ptm on input line 366.
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\psnfss\ot1ptm.fd
+File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
+)
+-- Using 8.5in x 11in (letter) paper.
+-- Using PDF output.
+\@IEEEnormalsizeunitybaselineskip=\dimen104
+-- This is a 10 point document.
+\CLASSINFOnormalsizebaselineskip=\dimen105
+\CLASSINFOnormalsizeunitybaselineskip=\dimen106
+\IEEEnormaljot=\dimen107
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <5> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <5> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <9> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <11> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <11> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <17> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <17> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <20> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <20> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <24> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 724.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <24> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 724.
+\IEEEilabelindentA=\dimen108
+\IEEEilabelindentB=\dimen109
+\IEEEilabelindent=\dimen110
+\IEEEelabelindent=\dimen111
+\IEEEdlabelindent=\dimen112
+\IEEElabelindent=\dimen113
+\IEEEiednormlabelsep=\dimen114
+\IEEEiedmathlabelsep=\dimen115
+\IEEEiedtopsep=\skip41
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@IEEEsubequation=\count85
+\abovecaptionskip=\skip42
+\belowcaptionskip=\skip43
+\c@figure=\count86
+\c@table=\count87
+\@IEEEeqnnumcols=\count88
+\@IEEEeqncolcnt=\count89
+\@IEEEtmpitemindent=\dimen116
+\c@IEEEbiography=\count90
+\@IEEEtranrubishbin=\box26
+) (C:\Users\apuglielli\Documents\MiKTeX\tex\latex\graphics\graphicx.sty
+Package: graphicx 2014/04/25 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\graphics\keyval.sty
+Package: keyval 2014/05/08 v1.15 key=value parser (DPC)
+\KV@toks@=\toks15
+)
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\graphics\graphics.sty
+Package: graphics 2009/02/05 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\graphics\trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\00miktex\graphics.cfg
+File: graphics.cfg 2007/01/18 v1.5 graphics configuration of teTeX/TeXLive
+)
+Package graphics Info: Driver file: pdftex.def on input line 91.
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\pdftex-def\pdftex.def
+File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\generic\oberdiek\infwarerr.sty
+Package: infwarerr 2010/04/08 v1.3 Providing info/warning/error messages (HO)
+)
+(C:\Users\apuglielli\Documents\MiKTeX\tex\generic\oberdiek\ltxcmds.sty
+Package: ltxcmds 2011/11/09 v1.22 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count91
+))
+\Gin@req@height=\dimen117
+\Gin@req@width=\dimen118
+)
+(C:\Users\apuglielli\Documents\MATLAB\EE290C\report\ee290c_mimo_report.aux)
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 60.
+LaTeX Font Info:    ... okay on input line 60.
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\context\base\supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count92
+\scratchdimen=\dimen119
+\scratchbox=\box27
+\nofMPsegments=\count93
+\nofMParguments=\count94
+\everyMPshowfont=\toks16
+\MPscratchCnt=\count95
+\MPscratchDim=\dimen120
+\MPnumerator=\count96
+\makeMPintoPDFobject=\count97
+\everyMPtoPDFconversion=\toks17
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 84.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 84.
+
+Underfull \hbox (badness 1888) in paragraph at lines 84--85
+[]\OT1/ptm/m/n/10 supports the an-tenna con-fig-u-ra-tions and mod-u-la-tion
+ []
+
+<images/agilent_mimo.jpg, id=1, 552.0625pt x 345.29pt>
+File: images/agilent_mimo.jpg Graphic file (type jpg)
+
+<use images/agilent_mimo.jpg>
+Package pdftex.def Info: images/agilent_mimo.jpg used on input line 92.
+(pdftex.def)             Requested size: 142.26378pt x 71.13335pt.
+
+<images/static_channel_decoder_comparison.png, id=3, 683.55376pt x 513.92pt>
+File: images/static_channel_decoder_comparison.png Graphic file (type png)
+
+<use images/static_channel_decoder_comparison.png>
+Package pdftex.def Info: images/static_channel_decoder_comparison.png used on i
+nput line 114.
+(pdftex.def)             Requested size: 227.62204pt x 171.1311pt.
+
+<images/time_varying_channel_doppler_3.png, id=4, 974.13937pt x 527.72156pt>
+File: images/time_varying_channel_doppler_3.png Graphic file (type png)
+
+<use images/time_varying_channel_doppler_3.png>
+Package pdftex.def Info: images/time_varying_channel_doppler_3.png used on inpu
+t line 121.
+(pdftex.def)             Requested size: 256.0748pt x 138.71822pt.
+
+Overfull \hbox (4.0748pt too wide) in paragraph at lines 121--122
+ [][] 
+ []
+
+[1{C:/Users/apuglielli/AppData/Local/MiKTeX/2.9/pdftex/config/pdftex.map}
+
+
+ <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/agilent_mimo.jpg>]
+<images/top_level_arch.pdf, id=14, 794.97pt x 614.295pt>
+File: images/top_level_arch.pdf Graphic file (type pdf)
+
+<use images/top_level_arch.pdf>
+Package pdftex.def Info: images/top_level_arch.pdf used on input line 147.
+(pdftex.def)             Requested size: 256.0748pt x 165.52638pt.
+
+Overfull \hbox (4.0748pt too wide) in paragraph at lines 147--148
+ [][] 
+ []
+
+<images/matrix_engine.pdf, id=16, 597.23125pt x 845.1575pt>
+File: images/matrix_engine.pdf Graphic file (type pdf)
+
+<use images/matrix_engine.pdf>
+Package pdftex.def Info: images/matrix_engine.pdf used on input line 158.
+(pdftex.def)             Requested size: 113.81102pt x 98.96593pt.
+ [2 <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/top_level_arch.p
+df, page is rotated 90 degrees> <C:/Users/apuglielli/Documents/MATLAB/EE290C/re
+port/images/matrix_engine.pdf> <C:/Users/apuglielli/Documents/MATLAB/EE290C/rep
+ort/images/static_channel_decoder_comparison.png (PNG copy)> <C:/Users/apugliel
+li/Documents/MATLAB/EE290C/report/images/time_varying_channel_doppler_3.png>]
+<images/initialize_weights.jpg, id=31, 523.9575pt x 303.38344pt>
+File: images/initialize_weights.jpg Graphic file (type jpg)
+
+<use images/initialize_weights.jpg>
+Package pdftex.def Info: images/initialize_weights.jpg used on input line 193.
+(pdftex.def)             Requested size: 227.62204pt x 131.79482pt.
+
+<images/adaptive_decoder.pdf, id=33, 597.23125pt x 845.1575pt>
+File: images/adaptive_decoder.pdf Graphic file (type pdf)
+
+<use images/adaptive_decoder.pdf>
+Package pdftex.def Info: images/adaptive_decoder.pdf used on input line 208.
+(pdftex.def)             Requested size: 227.62204pt x 121.94147pt.
+
+<images/snr_ber_curves_chisel_static.pdf, id=35, 614.295pt x 794.97pt>
+File: images/snr_ber_curves_chisel_static.pdf Graphic file (type pdf)
+
+<use images/snr_ber_curves_chisel_static.pdf>
+Package pdftex.def Info: images/snr_ber_curves_chisel_static.pdf used on input 
+line 219.
+(pdftex.def)             Requested size: 227.62204pt x 128.03784pt.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+<images/snr_ber_curves_chisel_doppler.pdf, id=37, 614.295pt x 794.97pt>
+File: images/snr_ber_curves_chisel_doppler.pdf Graphic file (type pdf)
+
+<use images/snr_ber_curves_chisel_doppler.pdf>
+Package pdftex.def Info: images/snr_ber_curves_chisel_doppler.pdf used on input
+ line 226.
+(pdftex.def)             Requested size: 256.0748pt x 138.71065pt.
+
+Overfull \hbox (4.0748pt too wide) in paragraph at lines 226--227
+ [][] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[3 <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/initialize_weight
+s.jpg> <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/adaptive_deco
+der.pdf>]
+Underfull \hbox (badness 1515) in paragraph at lines 239--240
+[]\OT1/ptm/m/n/10 The clock rate at which the de-sign was syn-the-sized
+ []
+
+
+Underfull \hbox (badness 1509) in paragraph at lines 239--240
+\OT1/ptm/m/n/10 802.11ac and LTE. When uti-liz-ing an 80MHz chan-nel,
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 251.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 251.
+<images/power_vs_area.pdf, id=72, 614.295pt x 794.97pt>
+File: images/power_vs_area.pdf Graphic file (type pdf)
+
+<use images/power_vs_area.pdf>
+Package pdftex.def Info: images/power_vs_area.pdf used on input line 272.
+(pdftex.def)             Requested size: 227.62204pt x 132.01894pt.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[4 <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/snr_ber_curves_ch
+isel_static.pdf> <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/snr
+_ber_curves_chisel_doppler.pdf>]
+<images/power_breakdown_module.pdf, id=97, 794.97pt x 614.295pt>
+File: images/power_breakdown_module.pdf Graphic file (type pdf)
+
+<use images/power_breakdown_module.pdf>
+Package pdftex.def Info: images/power_breakdown_module.pdf used on input line 3
+08.
+(pdftex.def)             Requested size: 170.71652pt x 131.782pt.
+
+(C:\Users\apuglielli\Documents\MATLAB\EE290C\report\ee290c_mimo_report.bbl
+LaTeX Font Info:    Try loading font information for OT1+pcr on input line 36.
+
+(C:\Users\apuglielli\Documents\MiKTeX\tex\latex\psnfss\ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+Underfull \hbox (badness 10000) in paragraph at lines 34--37
+[]\OT1/ptm/m/n/8 R. Adve, ``Op-ti-mal Beam-form-ing. ECE1515S: Smart
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 34--37
+\OT1/ptm/m/n/8 An-ten-nas Course Notes,'' May 2007, [On-line]. Avail-able:
+ []
+
+
+Overfull \hbox (37.92812pt too wide) in paragraph at lines 34--37
+\OT1/pcr/m/n/8 http://www.comm.utoronto.ca/ rsadve/Notes/BeamForming.pdf\OT1/pt
+m/m/n/8 . 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 50--54
+[]\OT1/ptm/m/n/8 I. Poole, ``LTE MIMO: Mul-ti-ple In-put Mul-ti-ple
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 50--54
+\OT1/ptm/m/n/8 Out-put Tu-to-rial,'' May 2014, [On-line]. Avail-able:
+ []
+
+
+Overfull \hbox (31.12811pt too wide) in paragraph at lines 50--54
+\OT1/pcr/m/n/8 http://www.radio-electronics.com/info/cellulartelecomms/
+ []
+
+) [5 <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/power_vs_area.p
+df> <C:/Users/apuglielli/Documents/MATLAB/EE290C/report/images/power_breakdown_
+module.pdf, page is rotated 90 degrees>]
+(C:\Users\apuglielli\Documents\MATLAB\EE290C\report\ee290c_mimo_report.aux) ) 
+Here is how much of TeX's memory you used:
+ 1935 strings out of 493737
+ 31683 string characters out of 3141428
+ 86902 words of memory out of 3000000
+ 5236 multiletter control sequences out of 15000+200000
+ 40810 words of font info for 77 fonts, out of 3000000 for 9000
+ 1028 hyphenation exceptions out of 8191
+ 27i,7n,21p,1252b,248s stack positions out of 5000i,500n,10000p,200000b,50000s
+{C
+:/Users/apuglielli/Documents/MiKTeX/fonts/enc/dvips/fontname/8r.enc}<C:/Users/a
+puglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Users/
+apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users
+/apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users
+/apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users
+/apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/
+apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users
+/apuglielli/Documents/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users
+/apuglielli/Documents/MiKTeX/fonts/type1/urw/courier/ucrr8a.pfb><C:/Users/apugl
+ielli/Documents/MiKTeX/fonts/type1/urw/times/utmb8a.pfb><C:/Users/apuglielli/Do
+cuments/MiKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/apuglielli/Documents/
+MiKTeX/fonts/type1/urw/times/utmri8a.pfb>
+Output written on ee290c_mimo_report.pdf (5 pages, 403352 bytes).
+PDF statistics:
+ 158 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 110 words of extra memory for PDF output out of 10000 (max. 10000000)
+
