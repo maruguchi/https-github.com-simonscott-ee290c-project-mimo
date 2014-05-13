@@ -77,7 +77,7 @@
 %%%% OBJECTIVES SECTION %%%%
 \section{Objectives}
 
-\IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel, as illustrated in Figure~\ref{mimo_cartoon}. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered, meaning that all the receive antennas are assumed to be on the same hardware and can share information.
+\IEEEPARstart{M}{IMO} refers to the use of multiple transmit antennas {\em and} multiple receive antennas to spatially multiplex data streams over a channel. This channel is often represented by a complex matrix ({\em H}), and can change over time. Although MIMO can be used to increase reliability of a link, this project is only concerned with the use of MIMO to improve throughput. Furthermore, only the single user case will be considered, meaning that all the receive antennas are assumed to be on the same hardware and can share information.
 
 The objectives of this project are therefore to develop a VLSI implementation of a MIMO decoder that:
 \begin{itemize}
@@ -86,13 +86,6 @@ The objectives of this project are therefore to develop a VLSI implementation of
 \item is able to adapt to changing channel conditions.
 \item is both compile-time and run-time configurable.
 \end{itemize}
-
-\begin{figure}[!h]
-\centering
-\includegraphics*[width=5cm, viewport = 300 0 560 130]{images/agilent_mimo.jpg}
-\caption{A 2x2 MIMO configuration}
-\label{mimo_cartoon}
-\end{figure}
 
 
 %%%% MOTIVATION AND ALGORITHM SECTION %%%%
@@ -123,9 +116,9 @@ To evaluate the performance of these algorithms, we simulated the uncoded symbol
 \label{ser_snr_different_schemes_dynamic}
 \end{figure}
 
-Adaptation can be combined with the MMSE linear detection scheme into the following algorithm:
+Adaptation can be combined with the ./bui   MMSE linear detection scheme into the following algorithm:
 \begin{enumerate}
-\item Estimate the channel matrix based on {\em a prior} known training sequence.
+\item Estimate the channel matrix based on {\em a priori} known training sequence.
 \item Compute initial MMSE receive filter
 \item Begin processing received samples using receive filter matrix.
 \item Adapt receive filter using LMS algorithm to track channel variations.
@@ -136,7 +129,7 @@ We implemented an LMS-MMSE MIMO decoder since this has relatively low implementa
 %%%% ARCHITECTURE SECTION %%%%
 \section{Hardware Architecture}
 
-The archictecture of the Adaptive MIMO Decoder is shown in Figure~\ref{top_level_arch}. The host configures the decoder by writing to the configuration registers, setting up the number of antennas used, the length of the training sequence, the modulation scheme used and the current SNR. Since different standards use different training sequences, the host then needs to write the current training sequence to the training memory. Once complete, the host writes a 1 to the {\em start} register, and begins sending samples to the RX Data Queue.
+The architecture of the Adaptive MIMO Decoder is shown in Figure~\ref{top_level_arch}. The host configures the decoder by writing to the configuration registers, setting parameters such as the number of antennas and the modulation scheme. Since different standards use different training sequences, the host then needs to write the current training sequence to the training memory. Once complete, the host writes a 1 to the {\em start} register, and begins sending samples to the RX Data Queue.
 
 The Channel Estimator uses the training sequence and the first few received samples to estimate the channel matrix H. This channel matrix is then sent to the Initialize Weights module, which computes the initial decoder matrix W\_seed. The Adaptive Decoder uses this W\_seed as a starting point for its decoder matrix W. The Adaptive Decoder decodes the samples in the RX Data Queue and writes the decoded symbols to the Decoded Data Queue. For each set of samples, the Adaptive Decoder also updates the W matrix.
 
@@ -151,7 +144,7 @@ Finally, the host reads the decoded symbols from the Decoded Data Queue. Each of
 
 \subsection{Matrix Engine}
 
-The Matrix Engine computes the complex vector-matrix multiply between an input vector V and an input matrix M. The input matrix M has size (number transmit antennas) x (number receive antennas). Since the Adaptive Decoder needs to decode a new set of antenna samples every cycle, the Matrix Engine needs to compute the vector-matrix multiply in a single cycle. For the 4x4 MIMO case, it does this using four dot-product units (each of which compute the dot product between two 4-element vectors) which operate in parallel. However, if only 2x2 MIMO needs to be supported, then only two dot-product units will be created at compile time.
+The Matrix Engine computes the complex vector-matrix multiply between an input vector V and an input matrix M. The input matrix M has size $N_{transmit\_antennas} \times N_{receive\_antennas}$. Since the Adaptive Decoder needs to decode a new set of antenna samples every cycle, the Matrix Engine needs to compute the vector-matrix multiply in a single cycle. For the 4x4 MIMO case, it does this using four 4-element dot-product units which operate in parallel. However, if only 2x2 MIMO needs to be supported, then only two dot-product units will be created at compile time.
 
 \begin{figure}[!h]
 \centering
@@ -197,7 +190,7 @@ For a 4x4 matrix inversion, this requires two 2x2 matrix inversions as well as s
 
 \subsection{Adaptive Decoder Module}
 
-The task of the Adaptive Decoder Module is simply to decode the samples received from the antennas into the symbols for the independent data streams. It does this by multiplying the received samples (vector $v$) with the decoder matrix $W$, using the Matrix Engine. This is shown in Figure~\ref{adaptive_decoder}. The $Wx$ vector is then converted into a vector of symbols $y$ using a simple slicer to find the nearest constellation points. The $error$ between $Wx$ and the decoded symbols is computed and multiplied by a step-size parameter $\mu$.
+The task of the Adaptive Decoder module is to decode the samples (received from the antennas) into the symbols for the independent data streams. It does this by multiplying the received samples (vector $x$) with the decoder matrix $W$, using the Matrix Engine. This is shown in Figure~\ref{adaptive_decoder}. The resulting $Wx$ vector is then converted into a vector of symbols $y$ using a simple slicer to find the nearest constellation points. The $error$ between $Wx$ and the decoded symbols is computed and multiplied by a step-size parameter $\mu$.
 
 This weighted error is used to update the decoder matrix according to the following equation:
 \[ W_{next} = W - x \times (error \cdot \mu) \]
@@ -212,7 +205,7 @@ Note that $x \times (error \cdot \mu)$ is the vector cross-product between recei
 
 \subsection{Evaluation of Bitwidths}
 
-The LMS MIMO Decoder architecture described above was implemented in Chisel \cite{chisel}. In order to verify correctness and determine the optimum bitwidths to use, the design was tested in Chisel, using test vectors taken from the MATLAB simulations (as described in Section \ref{matlab_comparison_section}). The symbol error rate versus SNR plots for different bitwidths, for a static channel, are shown in Figure~\ref{ser_ber_chisel_static}. This plot also includes the results from the MATLAB simulation for comparison. Similarly, Figure~\ref{ser_ber_chisel_dynamic} shows the SER vs SNR plots for a slowly changing channel.
+The hardware architecture described above was implemented in Chisel \cite{chisel}. In order to verify correctness and determine the optimum bitwidths to use, the Chisel implementation was tested using test vectors taken from the MATLAB simulations (as described in Section \ref{matlab_comparison_section}). The symbol error rate versus SNR plots for different bitwidths, using a static channel, are shown in Figure~\ref{ser_ber_chisel_static}. This plot also includes the results from the MATLAB simulation for comparison. Similarly, Figure~\ref{ser_ber_chisel_dynamic} shows the SER vs SNR plots for a slowly changing channel.
 
 \begin{figure}[!h]
 \centering
@@ -228,21 +221,21 @@ The LMS MIMO Decoder architecture described above was implemented in Chisel \cit
 \label{ser_ber_chisel_dynamic}
 \end{figure}
 
-For the static channel, the 20 bit and 24 bit Chisel implementations very closely track the MATLAB simulations, while the 16 bit simulation is completely incorrect. However, for the dynamic channel, where higher precision is needed to track the changing channel, only the 24 bit implementation is able to match the performance of the MATLAB simulation. Therefore, 24 bits was selected as the desired bitwidth for the design.
+For the static channel, the 20 bit and 24 bit Chisel implementations very closely track the MATLAB simulations, while the 16 bit simulation is completely incorrect. In the dynamic channel case, higher precision is needed to track the changing channel, and so only the 24 bit implementation is able to match the performance of the MATLAB simulation. Therefore, 24 bits was selected as the desired bitwidth for the design.
 
-The poor performance at lower bitwidths is caused by arithmetic overflow during the matrix inverse operation in the Initialize Weights module. Since the channel matrix H can be poorly conditioned, the entries in its inverse matrix can have a high dynamic range, resulting in arithmetic overflow if too few bits are used. Better performance can be achieved at lower bitwidths if saturating arithmetic or pseudo-floating-point were used. Unfortunately, neither of these two features are currently supported in Chisel.
+The poor performance at lower bitwidths is caused by arithmetic overflow during the matrix inverse operation in the Initialize Weights module. Better performance can be achieved at lower bitwidths if saturating arithmetic or floating-point were used. Unfortunately, neither of these two features are currently supported in Chisel.
 
 
 %%%% SYNTHESIS CONSTRAINTS SECTION %%%%
 \section{Synthesis Options and Constraints}
 
-The clock rate at which the design was synthesized was determined by maximum throughput requirements for 802.11ac and LTE. When utilizing an 80MHz channel, 802.11ac base stations can transmit 278 000 symbols/sub-carrier/antenna/second \cite{802_11_ac_handbook}. With 234 sub-carriers, this translates to 70 million symbols/second/antenna.
+The clock rate at which the design was synthesized was determined by maximum throughput requirements for 802.11ac and LTE. The maximum downlink rate for 802.11ac (80MHz channel) is 278 000 symbols/sub-carrier/antenna/second \cite{802_11_ac_handbook}. With 234 sub-carriers, this translates to 70 million symbols/second/antenna.
 
-LTE, on the other hand, has a maximum symbol rate of only 14 000 symbols/sub-carrier/antenna/second, but with 1200 sub-carriers \cite{lte_webpage}. This results in a throughput of 16.8 million symbols/second/antenna.
+LTE has a maximum symbol rate of 14 000 symbols/sub-carrier/antenna/second \cite{lte_webpage} and with 1200 sub-carriers, this results in a throughput of 16.8 million symbols/second/antenna.
 
-If the sub-carriers are decoded sequentially at the receiver (i.e. multiplexing the decoder between the sub-carriers, in time), but all the antenna streams are decoded in parallel, the Adaptive MIMO Decoder will therefore need to be clocked at 70MHz (i.e. at the symbols/antenna rate). However, it is possible to process multiple sub-carriers in parallel, as each sub-carrier is completely independent of the others. The advantage of this approach is that all the sub-carriers can share (on a time-multiplexing basis) common Channel Estimation and Weight Initialization modules, as these modules only run for a short period of time at startup. The only modules that therefore need to be duplicated are the the Matrix Engine and the Adaptive Decoder.
+If the sub-carriers are decoded sequentially (i.e. time-multiplexing the decoder between the sub-carriers), but all the antenna inputs are decoded in parallel, the Adaptive MIMO Decoder will need to be clocked at 70MHz (i.e. at the 802.11ac symbols/antenna rate). However, it is also possible to process multiple sub-carriers in parallel. The advantage of this approach is that all the sub-carriers can share (on a time-multiplexing basis) common Channel Estimation and Weight Initialization modules, as these modules only run at the beginning of each packet. The only modules that therefore need to be duplicated are the the Matrix Engine and the Adaptive Decoder.
 
-Table~\ref{clock_rate_table} therefore shows the required clock rate for parallelism levels of 1, 2 and 4. Note that the level of parallelism indicates both the number of sub-carriers that can be decoded in parallel, as well as the number of instantiations of the Matrix Engine and Adaptive Decoder. This means that all three scenarios shown in the table have {\em identical} throughput.
+Table~\ref{clock_rate_table} therefore shows the required clock rate for parallelism levels of 1, 2 and 4. Here, the level of parallelism indicates both the number of sub-carriers that can be decoded in parallel, as well as the number of instantiations of the Matrix Engine and Adaptive Decoder. This means that all three scenarios shown in the table have {\em identical} throughput.
 
 \begin{table}[!h]
 \caption{VLSI clock rate for different levels of parallelism}
@@ -259,13 +252,13 @@ Number of parallel sub-carriers & Clock Rate \\
 \end{tabular}
 \end{table}
 
-While estimating the channel matrix at the beginning of each packet (using the Long Training Field in the 802.11ac PHY header) and computing the resulting (initial) weight matrix does take time, special care was taken to ensure that this will not impact the latency and throughput requirements of 802.11ac and LTE. Since these initialization operations only take 50 clock cycles, but decoding entire packet takes 45000 cycles (or more, if aggregate packets are used), the initialization delay is easily handled by performing a small amount of buffering in the input queues and increasing the clock rate by 1-2\%.
+Estimating the channel matrix at the beginning of each packet and computing the resulting weight matrix takes only 50 clock cycles. Since it takes at least 45000 cycles to decode an entire packet, the impact of these intialization operations on latency and throughput was easily minimized with a small amount of buffering and a very slight increase in clock speed.
 
 
 %%%% SYNTHESIS RESULTS SECTION %%%%
 \section{Synthesis Results}
 
-The Chisel designed was synthesized at the three clock rates shown in Table~\ref{clock_rate_table}. Note that for the 35 MHz and 17.5 MHz cases, the Matrix Engine and Adaptive Decoder modules were replicated the required number of times. The results are shown in Figure~\ref{power_vs_area}, for a 4 antenna decoder. Again, it must be emphasized that all three synthesized versions have the same throughput, and are able to meet the requirements for 802.11ac and LTE.
+The Chisel designed was synthesized at the three clock rates shown in Table~\ref{clock_rate_table}. For the 35 MHz and 17.5 MHz cases, the Matrix Engine and Adaptive Decoder modules were replicated the required number of times. The results, for a 4 antenna decoder, are shown in Figure~\ref{power_vs_area}. Again, it must be emphasized that all three synthesized versions have the same throughput, and are able to meet the requirements for 802.11ac and LTE.
 
 \begin{figure}[!h]
 \centering
@@ -274,11 +267,11 @@ The Chisel designed was synthesized at the three clock rates shown in Table~\ref
 \label{power_vs_area}
 \end{figure}
 
-It is quite clear that the 24-bit 70MHz version results in the smallest area (0.6mm$^2$) and lowest power (78mW). While the 20-bit version does result in a slightly smaller design, it cannot be used due to poor reliability in changing channel conditions (as previously explained). Lower power figures at the slower clock rates could probably be achieved if voltage scaling was used; however, this feature was not available to us.
+It is quite clear that the 24-bit 70MHz version results in the smallest area (0.6mm$^2$) and lowest power (78mW). While the 20-bit version does result in a slightly smaller design, it cannot be used due to poor reliability in changing channel conditions. While lower power figures at the slower clock rates could be achieved if voltage scaling was used, this feature was not available to us.
 
-Furthermore, extrapolating from Figure~\ref{power_vs_area} shows that even smaller area/power figures could be obtained if the data streams from the 4 antennas were processed sequentially (rather than in parallel, as they are currently done), and the clock rate was increased accordingly.
+Extrapolating from Figure~\ref{power_vs_area} shows that even smaller area/power figures could be obtained if the data streams from the 4 antennas were processed sequentially (rather than in parallel, as they are currently done), and the clock rate was increased accordingly.
 
-The power consumed by each module in the MIMO decoder is shown in Table~\ref{power_breakdown_table} and illustrated in Figure~\ref{power_breakdown_module}. These show that almost half the power (35.8mW) is consumed by the initialization modules: Channel Estimator and Initialize Weights. Since these modules are only used for a very short period of time at the beginning of each packet ($<$ 0.1\% of the time), power gating them will reduce the average power consumption to 42mW.
+The power consumed by each module in the MIMO decoder is shown in Table~\ref{power_breakdown_table} and illustrated in Figure~\ref{power_breakdown_module}. These show that almost half the power is consumed by the initialization modules: Channel Estimator and Initialize Weights. Since these modules are used for $<$ 0.1\% of the total operation time, power gating them will reduce the average power consumption to 42mW.
 
 \begin{table}[!h]
 \caption{Breakdown of power by module}
@@ -312,19 +305,17 @@ initialization modules & & & 42.31 \\
 
 ANTONIO: if you can, please insert some 2x2 vs 4x4 results here. Mention that 4x4 hardware supports 2x2, but more efficient to generate 2x2 hardware.
 
-ANTONIO: do we want to compare to area/power of other MIMO decoders from the literature?
-
 
 %%%% CONCLUSION AND FUTURE WORK SECTION %%%%
 \section{Conclusions and Future Work}
 
-In this project, we have demonstrated an adaptive LMS-MMSE MIMO decoder that can achieve the throughput requirements of LTE and 802.11ac using QPSK modulation. The final design takes up less than 0.5 $mm^2$ of area and consumes 42mW when including power gating of the initialization blocks. By exploiting the LMS adaptive loop, this design is also able to track slow channel variations while maintaining good performance.
+In this project, we have demonstrated an adaptive LMS-MMSE MIMO decoder that can achieve the throughput requirements of LTE and 802.11ac using QPSK modulation. The final design takes up 0.6mm$^2$ of area and consumes 42mW when including power gating of the initialization blocks. By exploiting the LMS adaptive loop, this design is also able to track slow channel variations while maintaining good performance.
 
 There are several areas of further work that could improve this design:
 \begin{enumerate}
-\item Implement a real control loop to turn off the initialization modules when they are not in use.
-\item Optimize the bit-widths to reduce area and power. Probably it is sufficient to keep longer bit widths in the initialization block (where the matrix inversion is sensitive to precision errors) and reduce the bit widths in the main adaptive decoder. The required bit width in the inversion block could also be reduced by using pseudo-floating point or saturating arithmetic.
-\item Evaluate energy reduction techniques when using parallel processing modules. Since each module can operate with a lower throughput, it should be possible to reduce energy per decoded symbol by reducing the supply voltage.
+\item Implement power gating to turn off the initialization modules when they are not in use.
+\item Reduce the bit widths in the main adaptive decoder, while keeping the 24-bit words in the initialization blocks (where the matrix inversion is sensitive to precision errors), in order to decrease area and power. Furthermore, the required bit width in the inversion block could also be reduced by using floating point or saturating arithmetic.
+\item Evaluate energy reduction techniques when using parallel decoding modules. Since each module operates at a lower clock rate, it should be possible to reduce energy per decoded symbol by reducing the supply voltage.
 \item Design a control loop to dynamically select the LMS step size based on the time scale of channel variations.
 \item Integrate this MIMO receiver with a channel decoder and use the decoder hard decisions to adapt the receive filter.
 \end{enumerate}

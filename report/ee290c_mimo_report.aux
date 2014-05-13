@@ -3,41 +3,41 @@
 \citation{digital_bf}
 \citation{bf_notes}
 \@writefile{toc}{\contentsline {section}{\numberline {I}Objectives}{1}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces A 2x2 MIMO configuration}}{1}}
-\newlabel{mimo_cartoon}{{1}{1}}
 \@writefile{toc}{\contentsline {section}{\numberline {II}Algorithm Evaluation and Selection}{1}}
 \newlabel{matlab_comparison_section}{{II}{1}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces SER vs SNR for different MIMO detection schemes with a static channel}}{2}}
-\newlabel{ser_snr_different_schemes_static}{{2}{2}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces SER vs SNR for different MIMO detection schemes with a time varying channel (doppler shift of 3Hz)}}{2}}
-\newlabel{ser_snr_different_schemes_dynamic}{{3}{2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces SER vs SNR for different MIMO detection schemes with a static channel}}{2}}
+\newlabel{ser_snr_different_schemes_static}{{1}{2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces SER vs SNR for different MIMO detection schemes with a time varying channel (doppler shift of 3Hz)}}{2}}
+\newlabel{ser_snr_different_schemes_dynamic}{{2}{2}}
 \@writefile{toc}{\contentsline {section}{\numberline {III}Hardware Architecture}{2}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces The hardware architecture of the LMS Adaptive MIMO Decoder}}{2}}
-\newlabel{top_level_arch}{{4}{2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The hardware architecture of the LMS Adaptive MIMO Decoder}}{2}}
+\newlabel{top_level_arch}{{3}{2}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-A}}Matrix Engine}{2}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Design of the matrix engine}}{2}}
-\newlabel{matrix_engine}{{5}{2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Design of the matrix engine}}{2}}
+\newlabel{matrix_engine}{{4}{2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-B}}Channel Estimator Module}{2}}
 \citation{chisel}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-B}}Channel Estimator Module}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Weight initialization module}}{3}}
+\newlabel{initialize_weights}{{5}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-C}}Initialize Weights Module}{3}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {III-C}1}2x2 Matrix Inversion}{3}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {\unhbox \voidb@x \hbox {III-C}2}Inversion of Larger Matrices}{3}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Weight initialization module}}{3}}
-\newlabel{initialize_weights}{{6}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-D}}Adaptive Decoder Module}{3}}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces The adaptive decoder module}}{3}}
-\newlabel{adaptive_decoder}{{7}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The adaptive decoder module}}{3}}
+\newlabel{adaptive_decoder}{{6}{3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\unhbox \voidb@x \hbox {III-E}}Evaluation of Bitwidths}{3}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces SER vs SNR curves for Chisel implementations with different bitwidths (static channel)}}{3}}
+\newlabel{ser_ber_chisel_static}{{7}{3}}
 \citation{802_11_ac_handbook}
 \citation{lte_webpage}
-\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces SER vs SNR curves for Chisel implementations with different bitwidths (static channel)}}{4}}
-\newlabel{ser_ber_chisel_static}{{8}{4}}
-\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces SER vs SNR curves for Chisel implementations with different bitwidths (dynamic channel)}}{4}}
-\newlabel{ser_ber_chisel_dynamic}{{9}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces SER vs SNR curves for Chisel implementations with different bitwidths (dynamic channel)}}{4}}
+\newlabel{ser_ber_chisel_dynamic}{{8}{4}}
 \@writefile{toc}{\contentsline {section}{\numberline {IV}Synthesis Options and Constraints}{4}}
 \@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces VLSI clock rate for different levels of parallelism}}{4}}
 \newlabel{clock_rate_table}{{I}{4}}
 \@writefile{toc}{\contentsline {section}{\numberline {V}Synthesis Results}{4}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Power vs area for different levels of parallelism}}{4}}
+\newlabel{power_vs_area}{{9}{4}}
 \bibstyle{IEEEtran}
 \bibdata{refs}
 \bibcite{tse}{1}
@@ -46,11 +46,9 @@
 \bibcite{chisel}{4}
 \bibcite{802_11_ac_handbook}{5}
 \bibcite{lte_webpage}{6}
-\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Power vs area for different levels of parallelism}}{5}}
-\newlabel{power_vs_area}{{10}{5}}
 \@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Breakdown of power by module}}{5}}
 \newlabel{power_breakdown_table}{{II}{5}}
-\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces Power of LMS MIMO Decoder by module}}{5}}
-\newlabel{power_breakdown_module}{{11}{5}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Power of LMS MIMO Decoder by module}}{5}}
+\newlabel{power_breakdown_module}{{10}{5}}
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Conclusions and Future Work}{5}}
 \@writefile{toc}{\contentsline {section}{References}{5}}
