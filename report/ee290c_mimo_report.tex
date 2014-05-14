@@ -98,9 +98,9 @@ The maximum likelihood (ML) receiver is a nonlinear scheme which is theoreticall
 
 On the other hand, linear schemes require lower computational complexity but usually entail a loss in performance. These detection methods attempt to separate out the transmitted streams by linearly filtering the received vector. In zero-forcing (ZF) detection, the receive filter is chosen to minimize inter-stream interference. Though this technique performs well in interference-limited scenarios, there is a substantial loss in performance when noise dominates. Therefore, it is better to use the minimum mean square error (MMSE) receive filter since it minimizes the total mean square error in the detected vector. In the high SNR limit, this converges to the ZF receiver. Finally, the MMSE receiver can be combined with successive interference cancellation (SIC), where each spatial stream is successively decoded and its contribution subtracted from the received data. Therefore, streams decoded later in the process see a diminished amount of interference. This technique also theoretically achieves the full capacity, though in practice its performance is reduced compared to ML because it is more sensitive to errors in decoding the initial streams \cite{tse}. 
 
-An additional metric of interest is the ability to track channel variations. Since real channels vary between training sequences, it is desirable for the MIMO receiver to track these channel changes and maintain good performance. It is little use to invest in complex and power-hungry receiver hardware if this hardware cannot track the channel state and therefore suffers a large performance degradation. Consequently, it is of interest to add the ability to adapt on top of one of these MIMO detection schemes. This is easiest to accomplish with a linear detection scheme since adaptation can be implemented simply by modifying the receive filter, easily realized using a well-known technique such as least mean squares (LMS) or recursive least squares (RLS) \cite{digital_bf, bf_notes}. When the adaptive process is seeded with the initial MMSE receive filter, the convergence is immediate and tracking ability is improved.
+An additional metric of interest is the ability to track channel variations. Since real channels vary between training sequences, it is desirable for the MIMO receiver to track these channel changes and maintain good performance. It is of little use to invest in complex and power-hungry receiver hardware if this performance gain is lost in time-varying channels. Consequently, it is useful to make these MIMO detection schemes adaptive to the channel. This is easiest to accomplish with a linear detection scheme since the receive filter can be easily adapted using a well-known technique such as least mean squares (LMS) or recursive least squares (RLS) \cite{digital_bf, bf_notes}. When the adaptive process is seeded with the initial MMSE receive filter, the convergence is immediate and tracking ability is improved.
 
-To evaluate the performance of these algorithms, we simulated the uncoded symbol error rate (SER) versus SNR curves for a 4x4 MIMO system. Figure \ref{ser_snr_different_schemes_static} shows the performance achieved by the different receive techniques in a static 4x4 channel realized using the 802.11n channel model B. As expected, the ML and sphere decoding achieve the best performance, and unseeded LMS (which uses a very long training sequence) the worst, while seeded (MMSE) LMS and direct processing (MMSE) achieve very similar performance. Figure \ref{ser_snr_different_schemes_dynamic} shows the same simulation conducted with a time-varying 802.11n model B channel using a maximum doppler shift of 3 Hz. Here we can see that all receive schemes suffer a substantial performance loss, but that seeded LMS achieves a SER comparable to that of ML for high SNRs due to its ability to track the channel variations. 
+To evaluate the performance of these algorithms, we simulated the uncoded symbol error rate (SER) versus SNR curves for a 4x4 MIMO system. Figure \ref{ser_snr_different_schemes_static} shows the performance achieved by the different receive techniques in a static 4x4 channel realized using the 802.11n channel model B. As expected, the ML and sphere decoding achieve the best performance, and unseeded LMS (which uses a very long training sequence) the worst, while seeded (MMSE) LMS and direct processing (MMSE) achieve very similar performance. Figure \ref{ser_snr_different_schemes_dynamic} shows the same simulation conducted with a time-varying 802.11n model B channel using a maximum doppler shift of 3 Hz. Here we can see that all receive schemes suffer a substantial performance loss, but that seeded LMS achieves an SER comparable to that of ML for high SNRs due to its ability to track the channel variations. 
 
 \begin{figure}
 \centering
@@ -116,7 +116,7 @@ To evaluate the performance of these algorithms, we simulated the uncoded symbol
 \label{ser_snr_different_schemes_dynamic}
 \end{figure}
 
-Adaptation can be combined with the ./bui   MMSE linear detection scheme into the following algorithm:
+Adaptation can be combined with the  MMSE linear detection scheme into the following algorithm:
 \begin{enumerate}
 \item Estimate the channel matrix based on {\em a priori} known training sequence.
 \item Compute initial MMSE receive filter
@@ -174,10 +174,10 @@ This calls for two complex multiplications and a subtraction (to compute the det
 \subsubsection{Inversion of Larger Matrices}
 
 To invert larger matrices, the 2x2 matrix inversion hardware and the matrix engine are used. The inversion is performed blockwise:
-\[\left[ \begin{array}{cc} A & B \\ C & D \end{array}\right]^{-1} = \left[ \begin{array}{c} A^{-1}+A^{-1}B(D-CA^{-1}B)^{-1}CA^{-1} \\ -(D-CA^{-1}B)^{-1}CA^{-1} \end{array} \right] \]
-\[ \left[ \begin{array}{c} -A^{-1}B(D-CA^{-1}B)^{-1} \\  (D-CA^{-1}B)^{-1} \end{array}\right]\]
+\[\left[ \begin{array}{cc} A & B \\ C & D \end{array}\right]^{-1} = \left[ \ \begin{array}{cc} A^{-1}+A^{-1}BP^{-1}CA^{-1} & -A^{-1}BP^{-1} \\ -P^{-1}CA^{-1} & P^{-1} \end{array} \right] \]
 
-NEED TO FIX EQUATION TO USE MULTILNE
+where \[ P = D-CA^{-1}B \]
+
 
 For a 4x4 matrix inversion, this requires two 2x2 matrix inversions as well as several 2x2 matrix multiplications, which are performed using their respective dedicated hardware. We currently have not implemented 3x3 matrix inversion, but it can accomplished with minimal hardware overhead by using this same approach. 
 
@@ -302,9 +302,6 @@ initialization modules & & & 42.31 \\
 \caption{Power of LMS MIMO Decoder by module}
 \label{power_breakdown_module}
 \end{figure}
-
-ANTONIO: if you can, please insert some 2x2 vs 4x4 results here. Mention that 4x4 hardware supports 2x2, but more efficient to generate 2x2 hardware.
-
 
 %%%% CONCLUSION AND FUTURE WORK SECTION %%%%
 \section{Conclusions and Future Work}
